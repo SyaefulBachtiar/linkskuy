@@ -1,0 +1,537 @@
+import { BarChart3, Link, Plus, Image, Upload, Pen, Trash2 } from "lucide-react";
+import { useState, useEffect} from "react";
+import Input from "../form-components/Input";
+import Button from "../form-components/Button";
+import { collection, addDoc, Timestamp, query, where, getDocs, deleteDoc,updateDoc , doc } from "firebase/firestore";
+import { db } from "../../firebase/config";
+import { auth } from "../../firebase/config";
+import { onAuthStateChanged } from "firebase/auth";
+import Loading from "../form-components/Loading";
+import { useParams } from "react-router-dom";
+
+export default function LinkList() {
+  const [tambahLink, setTambahLink] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState({ link: "", nama: "", image: "default", customImage: null });
+  const [touched, setTouched] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [linkList, setLinkList] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const {displayName} = useParams();
+
+
+  // Preset images
+  const imageOptions = [
+    {
+      id: "tiktokshop",
+      name: "TikTok Shop",
+      url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKDk0O548Kz2wS-TvjKBOnEqwH7ePdxD0pxg&s",
+      color: "bg-black",
+    },
+    {
+      id: "shopee",
+      name: "Shopee",
+      url: "https://play-lh.googleusercontent.com/kvAK3tQp9S-QyXrBOEQ8owaw9YL6ri4Dr0jntUqgPOGkNiM4ERNaJheiTRq_xV2ePbXv",
+      color: "bg-orange-500",
+    },
+    {
+      id: "tokopedia",
+      name: "Tokopedia",
+      url: "https://play-lh.googleusercontent.com/BVfL-z6kQFdkg7-8J7Krscp7m6sYv7BuVT1U3wjggB2SXjJeo-IIUbBnAvUzNkjdzqk",
+      color: "bg-green-500",
+    },
+    {
+      id: "custom",
+      name: "Upload Custom",
+      url: null,
+      color: "bg-blue-500",
+    },
+  ];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
+
+    if (errors[name]) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [name]: "",
+      }));
+    }
+  };
+
+  const handleImageSelect = (imageId) => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      image: imageId,
+    }));
+    
+    // Reset custom image if selecting preset
+    if (imageId !== "custom") {
+      setForm((prevForm) => ({
+        ...prevForm,
+        customImage: null,
+      }));
+    }
+  };
+
+  const handleCustomImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setForm((prevForm) => ({
+          ...prevForm,
+          image: "custom",
+          customImage: event.target.result,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched({ ...touched, [name]: true });
+    validateField(name, form[name]);
+  };
+
+  const validateField = (name, value) => {
+    let error = "";
+
+    if (name === "link") {
+      if (!value) error = "Link wajib diisi";
+    }
+
+    if (name === "nama") {
+      if (!value) error = "Nama link wajib diisi";
+    }
+
+    setErrors({ ...errors, [name]: error });
+    return !error;
+  };
+
+  useEffect(() => {
+    const login = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setIsLoadingUser(false);
+      setIsLoading(false);
+    });
+    return () => login();
+  }, []);
+
+  
+  useEffect(() => {
+    const fetch = async() => {
+      // Admin
+      if (!currentUser) {
+        console.warn("User belum login, hentikan fetch.");
+        try {
+          // 1. Cari userId dari collection 'users' berdasarkan displayName
+          const users = collection(db, "users");
+          const qUsers = query(users, where("displayName", "==", displayName));
+          const userSnapshot = await getDocs(qUsers);
+
+          if (userSnapshot.empty) {
+            console.log("User not found");
+            return;
+          }
+
+          const userData = userSnapshot.docs[0].data();
+          console.log("User data:", userData);
+          const userId = userData.uuid;
+
+          // 2. Ambil links berdasarkan userId
+          const linksRef = collection(db, "links");
+          const qLinks = query(linksRef, where("userId", "==", userId));
+          const linksSnapshot = await getDocs(qLinks);
+
+          const linksData = linksSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          setLinkList(linksData);
+        } catch (error) {
+          console.error("Error fetching links:", error);
+        }
+      } else {
+        // pengunjung biasa
+        try {
+          const q = query(
+            collection(db, "links"),
+            where("userId", "==", currentUser.uid)
+          );
+          const querySnapshot = await getDocs(q);
+          const linksData = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setLinkList(linksData);
+        } catch (error) {
+          console.error("Error fetching links: ", error);
+          alert("Gagal mengambil data link: " + error.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+
+      
+    fetch();
+  }, [currentUser, displayName]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    // Validate all fields
+    const isNamaValid = validateField("nama", form.nama);
+    const isLinkValid = validateField("link", form.link);
+    
+    if (isNamaValid && isLinkValid) {
+      try{
+        const newData = {
+          nama: form.nama,
+          link: form.link,
+          image: form.image,
+          customImage: form.customImage,
+          userId: currentUser.uid,
+          createdAt: Timestamp.now(),
+        };
+
+        if (editMode && editId) {
+          await updateDoc(doc(db, "links", editId), newData);
+          alert("Link berhasil diperbarui!");
+        } else {
+          await addDoc(collection(db, "links"), newData);
+          alert("Link berhasil ditambahkan!");
+        }
+
+        // Reset form
+        setForm({ link: "", nama: "", image: "default", customImage: null });
+        setTambahLink(false);
+        setErrors({});
+        setTouched({});
+        setEditMode(false);
+        setEditId(null);
+
+        // Refresh list
+        const q = query(
+          collection(db, "links"),
+          where("userId", "==", currentUser.uid)
+        );
+        const querySnapshot = await getDocs(q);
+        const linksData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setLinkList(linksData);
+        
+      }catch(error) {
+        console.error("Error adding link: ", error);
+        alert("Gagal menambahkan link: " + error.message);
+      }finally {
+        setLoading(false);
+        setTambahLink(false);
+        setForm({ link: "", nama: "", image: "default", customImage: null });
+        setErrors({});
+        setTouched({});
+      }
+    }
+  };
+
+  if (isLoadingUser) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const handleDelete = async (id) => {
+    const confirm = window.confirm("Apakah Anda yakin ingin menghapus link ini?");
+    if (!confirm) return;
+
+      try {
+        await deleteDoc(doc(db, "links", id));
+        setLinkList((prevList) => prevList.filter((item) => item.id !== id));
+        alert("Link berhasil dihapus!");
+      } catch (error) {
+        console.error("Error deleting link: ", error);
+        alert("Gagal menghapus link: " + error.message);
+      }
+  }
+
+  return (
+    <>
+      {/* Link list */}
+      <div className="mt-20 ">
+        {/* Judul */}
+        <div className="font-montserrat">
+          <h1 className="text-2xl">Link</h1>
+        </div>
+        {/* List */}
+        <div className="flex flex-col gap-5 font-montserrat text-3xl">
+          {/* Read firebase disini */}
+          {isLoading ? (
+            <Loading />
+          ) : linkList.length > 0 ? (
+            linkList.map((item) => (
+              <div
+                key={item.id}
+                className="bg-gray-500/40 border rounded-xl p-5 flex"
+              >
+                {/* Gambar */}
+                <a href={`${item.link}`} className="w-full flex gap-4">
+                  {item.image === "custom" && item.customImage ? (
+                    <img
+                      src={item.customImage}
+                      alt="custom"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={
+                        imageOptions.find((opt) => opt.id === item.image)?.url
+                      }
+                      alt={item.image}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  )}
+
+                  <p>{item.nama}</p>
+                </a>
+                {/* Aksi */}
+                {currentUser ? (
+                  <div className="w-[10%] flex justify-end items-center gap-4">
+                    <button
+                      className="p-4"
+                      onClick={() => {
+                        setForm({
+                          nama: item.nama,
+                          link: item.link,
+                          image: item.image,
+                          customImage: item.customImage || null,
+                        });
+                        setTambahLink(true);
+                        setEditMode(true);
+                        setEditId(item.id);
+                        setTouched({ nama: true, link: true });
+                      }}
+                    >
+                      <Pen />
+                    </button>
+                    <button
+                      className="p-4"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 className="text-red-600" />
+                    </button>
+                  </div>
+                ) : (
+                  ""
+                )}
+              </div>
+            ))
+          ) : (
+            <>
+              <p className="text-center text-gray-500">
+                Belum ada link yang ditambahkan.
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Button tambah link */}
+        {currentUser ? (
+          <>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setTambahLink(true)}
+                className="bg-blue-500 w-[50px] h-[50px] flex justify-center items-center rounded-[50%] text-white mt-5"
+              >
+                <Plus />
+              </button>
+            </div>
+          </>
+        ) : (
+          ""
+        )}
+      </div>
+
+      {/* Modal */}
+      {tambahLink && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-5 rounded-md w-[400px] max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-montserrat mb-4">Tambah Link</h2>
+            <form onSubmit={handleSubmit}>
+              <Input
+                icon={<BarChart3 />}
+                label="Masukan Nama Link"
+                id="nama"
+                name="nama"
+                type="text"
+                placeholder="Masukan Nama Link"
+                value={form.nama}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                required
+                error={errors.nama}
+              />
+              <Input
+                icon={<Link />}
+                label="Masukan Link Produk Anda"
+                id="link"
+                name="link"
+                type="text"
+                placeholder="https://produkdigital.com"
+                value={form.link}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                required
+                error={errors.link}
+              />
+
+              {/* Image Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Image className="inline w-4 h-4 mr-2" />
+                  Pilih Gambar Platform
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {imageOptions.map((option) => (
+                    <div key={option.id}>
+                      {option.id === "custom" ? (
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="customImage"
+                            className="cursor-pointer"
+                          >
+                            <div
+                              className={`
+                              cursor-pointer p-3 rounded-lg border-2 transition-all duration-200
+                              ${
+                                form.image === option.id
+                                  ? "border-blue-500 bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }
+                            `}
+                            >
+                              <div className="flex flex-col items-center space-y-2">
+                                <div
+                                  className={`w-12 h-12 rounded-full ${option.color} flex items-center justify-center overflow-hidden`}
+                                >
+                                  {form.customImage ? (
+                                    <img
+                                      src={form.customImage}
+                                      alt="Custom"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <Upload className="w-6 h-6 text-white" />
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">
+                                  {option.name}
+                                </span>
+                                {form.image === option.id && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                )}
+                              </div>
+                            </div>
+                          </label>
+                          <input
+                            id="customImage"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCustomImageUpload}
+                            className="hidden"
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => handleImageSelect(option.id)}
+                          className={`
+                            cursor-pointer p-3 rounded-lg border-2 transition-all duration-200
+                            ${
+                              form.image === option.id
+                                ? "border-blue-500 bg-blue-50"
+                                : "border-gray-200 hover:border-gray-300"
+                            }
+                          `}
+                        >
+                          <div className="flex flex-col items-center space-y-2">
+                            <div
+                              className={`w-12 h-12 rounded-full ${option.color} flex items-center justify-center overflow-hidden`}
+                            >
+                              <img
+                                src={option.url}
+                                alt={option.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {option.name}
+                            </span>
+                            {form.image === option.id && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  loading={loading}
+                  type="submit"
+                  variant="primary"
+                  onClick={handleSubmit}
+                >
+                  Tambah
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setTambahLink(false);
+                    setForm({ link: "", nama: "", image: "default" });
+                    setErrors({});
+                    setTouched({});
+                  }}
+                  className="px-4 border py-2 text-red-500 rounded hover:bg-red-50 transition-colors"
+                >
+                  Tutup
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
