@@ -138,14 +138,14 @@ export default function Navbar(){
           </div>
           {/* sidebar */}
 
-          {/* <SideBar
+          <SideBar
             isLayanan={isLayananPageActive}
             isTemplate={isTemplatePageActive}
             isDashboard={isDashboardActive}
             currentUser={currentUser}
             menuActive={menuActive}
             handleLogout={handleLogout}
-          /> */}
+          />
         </nav>
       </>
     );
