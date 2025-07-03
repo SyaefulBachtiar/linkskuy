@@ -14,6 +14,7 @@ import Coba from "./layouts/Coba";
 function App() {
   return (
     <>
+      {console.log("MODE:", import.meta.env.MODE)}
       <Routes>
         <Route path="/" element={<LandingPageLayout />} />
         <Route path="/login" element={<Login />} />

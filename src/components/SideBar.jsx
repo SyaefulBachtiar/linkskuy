@@ -1,5 +1,4 @@
-import { useState } from "react";
-import IconNavbar from "./IconNavbar";
+
 import { Link } from "react-router-dom";
 
 export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser, handleLogout, menuActive}) {

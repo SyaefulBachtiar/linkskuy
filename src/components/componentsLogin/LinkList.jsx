@@ -145,7 +145,6 @@ export default function LinkList() {
     const fetch = async() => {
       // Admin
       if (!currentUser) {
-        console.warn("User belum login, hentikan fetch.");
         try {
           // 1. Cari userId dari collection 'users' berdasarkan displayName
           const users = collection(db, "users");
