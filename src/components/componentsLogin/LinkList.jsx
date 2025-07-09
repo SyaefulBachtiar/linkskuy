@@ -2,7 +2,7 @@ import { BarChart3, Link, Plus, Image, Upload, Pen, Trash2 } from "lucide-react"
 import { useState, useEffect} from "react";
 import Input from "../form-components/Input";
 import Button from "../form-components/Button";
-import { collection, addDoc, Timestamp, query, where, getDocs, deleteDoc,updateDoc , doc } from "firebase/firestore";
+import { collection, addDoc, Timestamp, query, where, getDocs, deleteDoc,updateDoc , doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { auth } from "../../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
@@ -23,6 +23,7 @@ export default function LinkList() {
     nama: "",
     image: "",
     customImage: null,
+    customImagePath: null
   });
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
@@ -36,6 +37,7 @@ export default function LinkList() {
   const { displayName } = useParams();
   const navigate = useNavigate();
 
+  
   // Preset images
   const imageOptions = [
     {
@@ -213,6 +215,7 @@ export default function LinkList() {
         const qLinks = query(linksRef, where("userId", "==", userId));
         const linksSnapshot = await getDocs(qLinks);
 
+       
         const linksData = linksSnapshot.docs.map((doc) => {
           const data = doc.data();
 
@@ -240,6 +243,7 @@ export default function LinkList() {
     e.preventDefault();
     setLoading(true);
 
+
     // Validate all fields
     const isNamaValid = validateField("nama", form.nama);
     const isLinkValid = validateField("link", form.link);
@@ -248,11 +252,36 @@ export default function LinkList() {
     if (isNamaValid && isLinkValid) {
       let downloadURL = null;
       let filename = null;
+      let imageUpload = form.customImage;
+      let imageLama = null;
       // upload semua
       try {
+        if (form.image === "custom" && editId && editMode) {
+          // Ambil image links berdasarkan userId
+          const docRef = doc(db, "links", editId);
+          const docSnap = await getDoc(docRef);
 
+          if (docSnap.exists()) {
+            const imageUrlLama = docSnap.data().customImagePath;
+            imageLama = imageUrlLama;
+            console.log(imageLama);
+          }
+        }
+        
         if (form.image === "custom" && form.customImage instanceof File) {
+          
           try {
+            if(form.image === "custom" && editMode && imageLama){
+              const {error : deleteError} = await supabase
+              .storage
+              .from(MY_SUPABASE_BUCKET_NAME)
+              .remove([imageLama]);
+              if (deleteError) {
+                console.error("Gagal hapus gambar lama:", deleteError.message);
+              } else {
+                console.log("Gambar lama berhasil dihapus");
+              }
+            }
             // 1. Buat nama file yang unik (penting!)
             const timeStampt = Date.now();
             filename = `uploads/${currentUser.uid}-${timeStampt}`;
@@ -260,7 +289,7 @@ export default function LinkList() {
             // 2. Unggah file ke Supabase Storage
             const { data, error: uploadError } = await supabase.storage
               .from(MY_SUPABASE_BUCKET_NAME)
-              .upload(filename, form.customImage, {
+              .upload(filename, imageUpload, {
                 cacheControl: "3600",
                 upsert: false,
                 metadata: {
@@ -292,8 +321,11 @@ export default function LinkList() {
           link: form.link,
           image: form.image,
           customImage: form.image === "custom" ? downloadURL : null,
+          customImagePath: form.image === "custom" ? filename : null,
           userId: currentUser.uid,
-          createdAt: Timestamp.now(),
+          ...(editMode
+            ? { updatedAt: Timestamp.now() }
+            : { createdAt: Timestamp.now() }),
         };
         console.log("Data yang akan dikirim:", newData);
         if (editMode && editId) {
@@ -305,14 +337,6 @@ export default function LinkList() {
           alert("Link berhasil ditambahkan!");
           navigate("/dashboard");
         }
-
-        // Reset form
-        setForm({ link: "", nama: "", image: "default", customImage: null });
-        setTambahLink(false);
-        setErrors({});
-        setTouched({});
-        setEditMode(false);
-        setEditId(null);
 
         // Refresh list
         const q = query(
@@ -338,6 +362,7 @@ export default function LinkList() {
       }
   }
   };
+
 
   if (isLoadingUser) {
     return (
@@ -418,6 +443,7 @@ export default function LinkList() {
                           link: item.link,
                           image: item.image,
                           customImage: item.customImage || null,
+                          customImagePath: item.customImagePath || null
                         });
                         setTambahLink(true);
                         setEditMode(true);

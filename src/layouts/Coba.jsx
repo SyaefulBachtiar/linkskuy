@@ -1,90 +1,121 @@
-import { onAuthStateChanged } from "firebase/auth";
-import { useEffect, useState } from "react";
-import { auth } from "../firebase/config";
-import { supabase } from "../supabase/supabaseClient";
+import { useRef, useEffect, useState } from "react";
 
-export default function Coba() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+export default function DraggableDivs() {
+  
+  const div1Ref = useRef(null);
+  const div2Ref = useRef(null);
+  const containerRef = useRef(null);
 
-  // useEffect(() => {
-  //   const user = onAuthStateChanged(auth, async (user) => {
-  //     setCurrentUser(user);
+  const [zIndexMap, setZIndexMap] = useState({
+    div1: 1,
+    div2: 1,
+  });
 
-  //     if (user) {
-  //       if (error) {
-  //         console.error("Error setting auth token:", error.message);
-  //       } else {
-  //         console.log("Auth token set successfully");
-  //       }
-  //     }
-  //   });
-  //   return () => user();
-  // }, []);
+  const [zCounter, setZCounter] = useState(1);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+  const getBoundingRect = (ref) => ref.current.getBoundingClientRect();
+
+  const isOverlap = (rectA, rectB) => {
+    return !(rectA.bottom <= rectB.top || rectA.top >= rectB.bottom);
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      alert("Please select a file to upload.");
-      return;
-    }
+  const makeDraggable = (ref, id) => {
+    let pos = { top: 0, left: 0, x: 0, y: 0 };
 
-    if (!currentUser) {
-      alert("You must be logged in to upload a file.");
-      return;
-    }
+    const mouseDownHandler = (e) => {
+      const newZ = zCounter + 1;
+      setZCounter(newZ);
+      setZIndexMap((prev) => ({
+        ...prev,
+        [id]: newZ,
+      }));
 
-    setUploading(true);
+      pos = {
+        left: ref.current.offsetLeft,
+        top: ref.current.offsetTop,
+        x: e.clientX,
+        y: e.clientY,
+      };
 
-    try {
-      const filename = `uploads/${Date.now()}_${file.name}`;
+      document.addEventListener("mousemove", mouseMoveHandler);
+      document.addEventListener("mouseup", mouseUpHandler);
+    };
 
-      const { data, error } = await supabase.storage
-        .from("linkskuy")
-        .upload(filename, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-      if (error) throw error;
+    const mouseMoveHandler = (e) => {
+      const dy = e.clientY - pos.y;
 
-      const { data: publicUrl } = supabase.storage
-        .from("linkskuy")
-        .getPublicUrl(filename);
+      const container = containerRef.current.getBoundingClientRect();
+      const box = ref.current.getBoundingClientRect();
 
-      console.log("Image URL:", publicUrl.publicUrl);
-    } catch (error) {
-      console.error("Error uploading file:", error.message);
-      alert("Failed to upload file. Please try again.");
-    } finally {
-      setUploading(false);
-    }
+      let newTop = pos.top + dy;
+
+      // Batas vertikal
+      if (newTop < 0) newTop = 0;
+      if (newTop + box.height > container.height)
+        newTop = container.height - box.height;
+
+      ref.current.style.top = `${newTop}px`;
+    };
+
+    const mouseUpHandler = () => {
+      const currentBox = getBoundingRect(ref);
+      const otherRef = id === "div1" ? div2Ref : div1Ref;
+      const otherBox = getBoundingRect(otherRef);
+
+      if (isOverlap(currentBox, otherBox)) {
+        const currentHeight = currentBox.height;
+        const container = containerRef.current.getBoundingClientRect();
+
+        // Cari posisi terdekat atas atau bawah untuk menghindari tumpang tindih
+        const newTopUp = otherBox.top - currentHeight - 1 - container.top;
+        const newTopDown = otherBox.bottom + 1 - container.top;
+
+        const maxTop = container.height - currentHeight;
+
+        let finalTop = newTopDown;
+        if (newTopUp >= 0) {
+          finalTop =
+            Math.abs(currentBox.top - newTopUp) <
+            Math.abs(currentBox.top - newTopDown)
+              ? newTopUp
+              : newTopDown;
+        }
+
+        // Jaga agar tetap dalam container
+        if (finalTop < 0) finalTop = 0;
+        if (finalTop > maxTop) finalTop = maxTop;
+
+        ref.current.style.top = `${finalTop}px`;
+      }
+
+      document.removeEventListener("mousemove", mouseMoveHandler);
+      document.removeEventListener("mouseup", mouseUpHandler);
+    };
+
+    ref.current.addEventListener("mousedown", mouseDownHandler);
   };
+
+  useEffect(() => {
+    makeDraggable(div1Ref, "div1");
+    makeDraggable(div2Ref, "div2");
+  }, []);
+
   return (
-    <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Upload File</h1>
-        <form onSubmit={handleUpload} className="space-y-4">
-          <label htmlFor="foto">Upload Foto</label>
-          <input
-            type="file"
-            id="foto"
-            onChange={handleFileChange}
-            className="block w-full text-sm"
-            accept="image/*"
-          />
-          <button
-            type="submit"
-            disabled={uploading}
-            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition duration-200"
-          >
-            {uploading ? "Uploading..." : "Klik Saya"}
-          </button>
-        </form>
+    <div className="w-screen h-screen flex justify-center items-center">
+      <div
+        ref={containerRef}
+        className="wadah w-[500px] h-[400px] relative bg-gray-100 overflow-hidden border"
+      >
+        <div
+          ref={div1Ref}
+          className="div-1 w-full h-[100px] bg-blue-500 absolute cursor-move"
+          style={{ top: "50px", zIndex: zIndexMap.div1 }}
+        ></div>
+        <div
+          ref={div2Ref}
+          className="div-2 w-full h-[100px] bg-red-500 absolute cursor-move"
+          style={{ top: "200px", zIndex: zIndexMap.div2 }}
+        ></div>
       </div>
     </div>
   );

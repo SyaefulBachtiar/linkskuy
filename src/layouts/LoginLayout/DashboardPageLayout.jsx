@@ -44,11 +44,11 @@ export default function Dashboard() {
                     <h1 className="text-2xl">Terlaris 🔥</h1>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:[200px_minmax(900px,_1fr)_100px] gap-5">
-                    {/* Card produk */}
+                  {/* <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:[200px_minmax(900px,_1fr)_100px] gap-5">
+
                    <CardProduk ratting={ratting}/>
 
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
