@@ -17,16 +17,13 @@ export default function Halaman2(){
       },
     ];
     return (
-      <div className=" flow-root bg-slate-300">
-        <div className="mt-[150px] font-montserrat">
-          <div className="px-10">
-                <h1 className="text-4xl">Kami Menyediakan</h1>
-          </div>
+      <div className="flex justify-center items-center min-h-screen bg-slate-300">
+        <div className="font-montserrat">
           <div className="flex gap-10 flex-wrap sm:flex-wrap md:flex-wrap lg:flex-nowrap xl:flex-nowrap">
                 {contents.map((content, i) => (
                     <div
                     key={i}
-                    className="flex flex-col justify-center mt-20 p-10"
+                    className="flex flex-col justify-center p-10"
                     >
                         <div className="">
                             <img src={content.gambar} alt={`gambar ${i}`} className="object-center p-5" />

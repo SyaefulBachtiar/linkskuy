@@ -7,8 +7,9 @@ import { db } from "../../firebase/config";
 import { auth } from "../../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
 import Loading from "../form-components/Loading";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../supabase/supabaseClient";
+
 
 
 
@@ -33,6 +34,7 @@ export default function LinkList() {
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
   const { displayName } = useParams();
+  const navigate = useNavigate();
 
   // Preset images
   const imageOptions = [
@@ -246,45 +248,45 @@ export default function LinkList() {
     if (isNamaValid && isLinkValid) {
       let downloadURL = null;
       let filename = null;
-      if (form.image === "custom" && form.customImage instanceof File) {
-        try {
-
-          // 1. Buat nama file yang unik (penting!)
-          const timeStampt = Date.now();
-          filename = `uploads/${currentUser.uid}-${timeStampt}`;
-
-          // 2. Unggah file ke Supabase Storage
-          const { data, error: uploadError } = await supabase.storage
-            .from(MY_SUPABASE_BUCKET_NAME)
-            .upload(filename, form.customImage, {
-              cacheControl: "3600",
-              upsert: false,
-              metadata: {
-                user_id: currentUser.uid, // pastikan ini bukan undefined/null
-              },
-            });
-
-          if (uploadError) {
-            throw uploadError;
-          }
-
-          // 3. Dapatkan URL publik dari file yang baru diunggah
-          const { data: publicURLData } = supabase.storage
-            .from(MY_SUPABASE_BUCKET_NAME)
-            .getPublicUrl(filename);
-
-          downloadURL = publicURLData.publicUrl;
-
-          alert("Gambar kustom berhasil diunggah!");
-        } catch (err) {
-          console.error("Error mengunggah gambar kustom:", err);
-          alert("Gagal mengunggah gambar kustom: " + err.message);
-          // Reset customImage jika gagal
-          setForm((prevForm) => ({ ...prevForm, customImage: null }));
-        }
-      }
       // upload semua
       try {
+
+        if (form.image === "custom" && form.customImage instanceof File) {
+          try {
+            // 1. Buat nama file yang unik (penting!)
+            const timeStampt = Date.now();
+            filename = `uploads/${currentUser.uid}-${timeStampt}`;
+
+            // 2. Unggah file ke Supabase Storage
+            const { data, error: uploadError } = await supabase.storage
+              .from(MY_SUPABASE_BUCKET_NAME)
+              .upload(filename, form.customImage, {
+                cacheControl: "3600",
+                upsert: false,
+                metadata: {
+                  user_id: currentUser.uid, // pastikan ini bukan undefined/null
+                },
+              });
+
+            if (uploadError) {
+              throw uploadError;
+            }
+
+            // 3. Dapatkan URL publik dari file yang baru diunggah
+            const { data: publicURLData } = supabase.storage
+              .from(MY_SUPABASE_BUCKET_NAME)
+              .getPublicUrl(filename);
+
+            downloadURL = publicURLData.publicUrl;
+
+            alert("Gambar kustom berhasil diunggah!");
+          } catch (err) {
+            console.error("Error mengunggah gambar kustom:", err);
+            alert("Gagal mengunggah gambar kustom: " + err.message);
+            // Reset customImage jika gagal
+            setForm((prevForm) => ({ ...prevForm, customImage: null }));
+          }
+        }
         const newData = {
           nama: form.nama,
           link: form.link,
@@ -297,9 +299,11 @@ export default function LinkList() {
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
           alert("Link berhasil diperbarui!");
+          navigate("/dashboard");
         } else {
           await addDoc(collection(db, "links"), newData);
           alert("Link berhasil ditambahkan!");
+          navigate("/dashboard");
         }
 
         // Reset form
@@ -321,7 +325,8 @@ export default function LinkList() {
           ...doc.data(),
         }));
         setLinkList(linksData);
-      } catch (error) {
+      
+     } catch (error) {
         console.error("Error adding link: ", error);
         alert("Gagal menambahkan link: " + error.message);
       } finally {
@@ -331,7 +336,7 @@ export default function LinkList() {
         setErrors({});
         setTouched({});
       }
-    }
+  }
   };
 
   if (isLoadingUser) {
@@ -352,9 +357,11 @@ export default function LinkList() {
       await deleteDoc(doc(db, "links", id));
       setLinkList((prevList) => prevList.filter((item) => item.id !== id));
       alert("Link berhasil dihapus!");
+      navigate('/')
     } catch (error) {
       console.error("Error deleting link: ", error);
       alert("Gagal menghapus link: " + error.message);
+      navigate("/dashboard");
     }
   };
 
