@@ -1,72 +1,91 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { db } from "../firebase/config";
+import { auth } from "../firebase/config";
+import { supabase } from "../supabase/supabaseClient";
 
 export default function Coba() {
-    const {displayName} = useParams();
-    const [links, setLinks] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-    useEffect(() => {
-        const fetch = async () => {
-            try{
-          // 1. Cari userId dari collection 'users' berdasarkan displayName
-          const users = collection(db, "users");
-          const qUsers = query(users, where("displayName", "==", displayName));
-          const userSnapshot = await getDocs(qUsers);
+  // useEffect(() => {
+  //   const user = onAuthStateChanged(auth, async (user) => {
+  //     setCurrentUser(user);
 
-          if (userSnapshot.empty) {
-            console.log("User not found");
-            return;
-          }
+  //     if (user) {
+  //       if (error) {
+  //         console.error("Error setting auth token:", error.message);
+  //       } else {
+  //         console.log("Auth token set successfully");
+  //       }
+  //     }
+  //   });
+  //   return () => user();
+  // }, []);
 
-          const userData = userSnapshot.docs[0].data();
-          console.log("User data:", userData);
-          const userId = userData.uuid;
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
 
-          // 2. Ambil links berdasarkan userId
-          const linksRef = collection(db, "links");
-          const qLinks = query(linksRef, where("userId", "==", userId));
-          const linksSnapshot = await getDocs(qLinks);
-
-          const linksData = linksSnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data()
-          }));
-
-          setLinks(linksData);
-        }catch(error){
-            console.error("Error fetching links:", error);
-        }
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      alert("Please select a file to upload.");
+      return;
     }
-        fetch();
-    }, [displayName]);
 
-    return (
-      <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-bold mb-6 text-center">{displayName}</h1>
-          {links.length > 0 ? (
-            <ul className="space-y-4">
-              {links.map((link) => (
-                <li key={link.id} className="bg-gray-100 p-4 rounded shadow">
-                  <a href={link.link} target="_blank" rel="noopener noreferrer">
-                    <p className="font-semibold">{link.nama}</p>
-                    <p className="text-sm text-blue-600">{link.link}</p>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-center text-gray-400">
-              Tidak ada link ditemukan.
-            </p>
-          )
-          }
-          <button className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition duration-200">
-            Klik Saya
+    if (!currentUser) {
+      alert("You must be logged in to upload a file.");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const filename = `uploads/${Date.now()}_${file.name}`;
+
+      const { data, error } = await supabase.storage
+        .from("linkskuy")
+        .upload(filename, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (error) throw error;
+
+      const { data: publicUrl } = supabase.storage
+        .from("linkskuy")
+        .getPublicUrl(filename);
+
+      console.log("Image URL:", publicUrl.publicUrl);
+    } catch (error) {
+      console.error("Error uploading file:", error.message);
+      alert("Failed to upload file. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+  return (
+    <div className="bg-gray-100 min-h-screen flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">Upload File</h1>
+        <form onSubmit={handleUpload} className="space-y-4">
+          <label htmlFor="foto">Upload Foto</label>
+          <input
+            type="file"
+            id="foto"
+            onChange={handleFileChange}
+            className="block w-full text-sm"
+            accept="image/*"
+          />
+          <button
+            type="submit"
+            disabled={uploading}
+            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition duration-200"
+          >
+            {uploading ? "Uploading..." : "Klik Saya"}
           </button>
-        </div>
+        </form>
       </div>
-    );
+    </div>
+  );
 }

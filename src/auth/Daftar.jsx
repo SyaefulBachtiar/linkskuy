@@ -171,7 +171,19 @@ export default function Daftar(){
                 icon={<Lock />}
               />
 
-              <Button loading={loading} variant="primary" type="submit">Kirim</Button>
+              <Button
+                loading={loading}
+                variant="primary"
+                type="submit"
+                disabled={
+                  !form.namaLengkap ||
+                  !form.email ||
+                  !form.password ||
+                  !form.password2 
+                }
+              >
+                Kirim
+              </Button>
               <div className="pt-4">
                 <NavLink to="/login">
                   <p className="text-sm hover:underline">Kembali login</p>

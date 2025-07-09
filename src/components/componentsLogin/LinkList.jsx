@@ -8,21 +8,31 @@ import { auth } from "../../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
 import Loading from "../form-components/Loading";
 import { useParams } from "react-router-dom";
+import { supabase } from "../../supabase/supabaseClient";
+
+
+
+const MY_SUPABASE_BUCKET_NAME = "linkkk"; 
 
 export default function LinkList() {
   const [tambahLink, setTambahLink] = useState(false);
   const [errors, setErrors] = useState({});
-  const [form, setForm] = useState({ link: "", nama: "", image: "default", customImage: null });
+  const [form, setForm] = useState({
+    link: "",
+    nama: "",
+    image: "",
+    customImage: null,
+  });
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
   const [linkList, setLinkList] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
-  const {displayName} = useParams();
-
+  const { displayName } = useParams();
 
   // Preset images
   const imageOptions = [
@@ -72,7 +82,7 @@ export default function LinkList() {
       ...prevForm,
       image: imageId,
     }));
-    
+
     // Reset custom image if selecting preset
     if (imageId !== "custom") {
       setForm((prevForm) => ({
@@ -82,31 +92,41 @@ export default function LinkList() {
     }
   };
 
-  const handleCustomImageUpload = (e) => {
+  // FUNGSI UPLOAD GAMBAR KE SUPABASE STORAGE
+  const handleCustomImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
-        return;
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
+    if (!file) {
+      alert("Tidak ada file yang dipilih.");
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setForm((prevForm) => ({
-          ...prevForm,
-          image: "custom",
-          customImage: event.target.result,
-        }));
-      };
-      reader.readAsDataURL(file);
+    // Validate file type
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (!validTypes.includes(file.type)) {
+      alert("Mohon pilih file gambar yang valid (JPEG, PNG, GIF, atau WebP)");
+      return;
+    }
+
+    setUploadingImage(true); // Mulai loading untuk upload gambar
+
+    // Validate file size (max 5MB)
+    const MAX_FILE_SIZE_MB = 5;
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      alert(`Ukuran file harus kurang dari ${MAX_FILE_SIZE_MB}MB`);
+      return;
+    } else {
+      setForm((prevForm) => ({
+        ...prevForm,
+        image: "custom",
+        customImage: file, // Simpan URL publik di sini
+      }));
+      setUploadingImage(false);
     }
   };
 
@@ -140,85 +160,140 @@ export default function LinkList() {
     return () => login();
   }, []);
 
-  
+  // read data
   useEffect(() => {
-    const fetch = async() => {
-      // Admin
-      if (!currentUser) {
-        try {
-          // 1. Cari userId dari collection 'users' berdasarkan displayName
-          const users = collection(db, "users");
-          const qUsers = query(users, where("displayName", "==", displayName));
+    const fetchLinks = async () => {
+      // Fungsi helper untuk mendapatkan public URL gambar dari Supabase
+      // const resolveCustomImage = (imagePath) => {
+      //   if (!imagePath) return null;
+
+      //   const { data, error } = supabase.storage
+      //     .from(MY_SUPABASE_BUCKET_NAME)
+      //     .getPublicUrl(imagePath);
+
+      //   if (error) {
+      //     console.error(
+      //       "Error getting public URL from Supabase:",
+      //       error.message
+      //     );
+      //     return null;
+      //   }
+
+      //   return data?.publicUrl || null;
+      // };
+
+      try {
+        let userId = null;
+
+        // 🔍 Jika belum login (pengunjung), ambil userId dari Firestore
+        if (!currentUser) {
+          const usersRef = collection(db, "users");
+          const qUsers = query(
+            usersRef,
+            where("displayName", "==", displayName)
+          );
           const userSnapshot = await getDocs(qUsers);
 
           if (userSnapshot.empty) {
-            console.log("User not found");
+            console.log("User with displayName not found:", displayName);
             return;
           }
 
           const userData = userSnapshot.docs[0].data();
-          console.log("User data:", userData);
-          const userId = userData.uuid;
-
-          // 2. Ambil links berdasarkan userId
-          const linksRef = collection(db, "links");
-          const qLinks = query(linksRef, where("userId", "==", userId));
-          const linksSnapshot = await getDocs(qLinks);
-
-          const linksData = linksSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          setLinkList(linksData);
-        } catch (error) {
-          console.error("Error fetching links:", error);
+          userId = userData.uuid;
+        } else {
+          // 👤 Jika login, ambil userId dari Firebase Auth
+          userId = currentUser.uid;
         }
-      } else {
-        // pengunjung biasa
-        try {
-          const q = query(
-            collection(db, "links"),
-            where("userId", "==", currentUser.uid)
-          );
-          const querySnapshot = await getDocs(q);
-          const linksData = querySnapshot.docs.map((doc) => ({
+
+        // Ambil data links berdasarkan userId
+        const linksRef = collection(db, "links");
+        const qLinks = query(linksRef, where("userId", "==", userId));
+        const linksSnapshot = await getDocs(qLinks);
+
+        const linksData = linksSnapshot.docs.map((doc) => {
+          const data = doc.data();
+
+          return {
             id: doc.id,
-            ...doc.data(),
-          }));
-          setLinkList(linksData);
-        } catch (error) {
-          console.error("Error fetching links: ", error);
-          alert("Gagal mengambil data link: " + error.message);
-        } finally {
-          setIsLoading(false);
-        }
+            ...data,
+          };
+        });
+
+        setLinkList(linksData);
+      } catch (error) {
+        console.error("Error fetching data:", error.message);
+        alert("Gagal mengambil data: " + error.message);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
 
-      
-    fetch();
-  }, [currentUser, displayName]);
+    if (!isLoadingUser) {
+      fetchLinks();
+    }
+  }, [currentUser, displayName, isLoadingUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Validate all fields
     const isNamaValid = validateField("nama", form.nama);
     const isLinkValid = validateField("link", form.link);
-    
+
+    // Upload gambar
     if (isNamaValid && isLinkValid) {
-      try{
+      let downloadURL = null;
+      let filename = null;
+      if (form.image === "custom" && form.customImage instanceof File) {
+        try {
+
+          // 1. Buat nama file yang unik (penting!)
+          const timeStampt = Date.now();
+          filename = `uploads/${currentUser.uid}-${timeStampt}`;
+
+          // 2. Unggah file ke Supabase Storage
+          const { data, error: uploadError } = await supabase.storage
+            .from(MY_SUPABASE_BUCKET_NAME)
+            .upload(filename, form.customImage, {
+              cacheControl: "3600",
+              upsert: false,
+              metadata: {
+                user_id: currentUser.uid, // pastikan ini bukan undefined/null
+              },
+            });
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          // 3. Dapatkan URL publik dari file yang baru diunggah
+          const { data: publicURLData } = supabase.storage
+            .from(MY_SUPABASE_BUCKET_NAME)
+            .getPublicUrl(filename);
+
+          downloadURL = publicURLData.publicUrl;
+
+          alert("Gambar kustom berhasil diunggah!");
+        } catch (err) {
+          console.error("Error mengunggah gambar kustom:", err);
+          alert("Gagal mengunggah gambar kustom: " + err.message);
+          // Reset customImage jika gagal
+          setForm((prevForm) => ({ ...prevForm, customImage: null }));
+        }
+      }
+      // upload semua
+      try {
         const newData = {
           nama: form.nama,
           link: form.link,
           image: form.image,
-          customImage: form.customImage,
+          customImage: form.image === "custom" ? downloadURL : null,
           userId: currentUser.uid,
           createdAt: Timestamp.now(),
         };
-
+        console.log("Data yang akan dikirim:", newData);
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
           alert("Link berhasil diperbarui!");
@@ -246,14 +321,13 @@ export default function LinkList() {
           ...doc.data(),
         }));
         setLinkList(linksData);
-        
-      }catch(error) {
+      } catch (error) {
         console.error("Error adding link: ", error);
         alert("Gagal menambahkan link: " + error.message);
-      }finally {
+      } finally {
         setLoading(false);
         setTambahLink(false);
-        setForm({ link: "", nama: "", image: "default", customImage: null });
+        setForm({ link: "", nama: "", image: "", customImage: null });
         setErrors({});
         setTouched({});
       }
@@ -269,27 +343,25 @@ export default function LinkList() {
   }
 
   const handleDelete = async (id) => {
-    const confirm = window.confirm("Apakah Anda yakin ingin menghapus link ini?");
+    const confirm = window.confirm(
+      "Apakah Anda yakin ingin menghapus link ini?"
+    );
     if (!confirm) return;
 
-      try {
-        await deleteDoc(doc(db, "links", id));
-        setLinkList((prevList) => prevList.filter((item) => item.id !== id));
-        alert("Link berhasil dihapus!");
-      } catch (error) {
-        console.error("Error deleting link: ", error);
-        alert("Gagal menghapus link: " + error.message);
-      }
-  }
+    try {
+      await deleteDoc(doc(db, "links", id));
+      setLinkList((prevList) => prevList.filter((item) => item.id !== id));
+      alert("Link berhasil dihapus!");
+    } catch (error) {
+      console.error("Error deleting link: ", error);
+      alert("Gagal menghapus link: " + error.message);
+    }
+  };
 
   return (
     <>
       {/* Link list */}
-      <div className="mt-20 ">
-        {/* Judul */}
-        <div className="font-montserrat">
-          <h1 className="text-2xl">Link</h1>
-        </div>
+      <div className="mt-20 p-10">
         {/* List */}
         <div className="flex flex-col gap-5 font-montserrat text-3xl">
           {/* Read firebase disini */}
@@ -299,16 +371,23 @@ export default function LinkList() {
             linkList.map((item) => (
               <div
                 key={item.id}
-                className="bg-gray-500/40 border rounded-xl p-5 flex"
+                className="bg-white border rounded-xl p-5 gap-2 flex items-center text-sm sm:text-sm md:text-base lg:text-lg xl:text-4xl"
               >
                 {/* Gambar */}
-                <a href={`${item.link}`} className="w-full flex gap-4">
+                <a
+                  href={`${item.link}`}
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center gap-4"
+                >
                   {item.image === "custom" && item.customImage ? (
-                    <img
-                      src={item.customImage}
-                      alt="custom"
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <>
+                      {/* <p>{item.customImage}</p> */}
+                      <img
+                        src={item.customImage}
+                        alt="custom"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    </>
                   ) : (
                     <img
                       src={
@@ -323,7 +402,7 @@ export default function LinkList() {
                 </a>
                 {/* Aksi */}
                 {currentUser ? (
-                  <div className="w-[10%] flex justify-end items-center gap-4">
+                  <div className="w-[10%] flex justify-end items-center">
                     <button
                       className="p-4"
                       onClick={() => {
@@ -454,9 +533,13 @@ export default function LinkList() {
                                 <span className="text-sm font-medium text-gray-700">
                                   {option.name}
                                 </span>
-                                {form.image === option.id && (
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                {uploadingImage && form.image === option.id && (
+                                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                                 )}
+                                {form.image === option.id &&
+                                  !uploadingImage && (
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  )}
                               </div>
                             </div>
                           </label>
@@ -506,10 +589,18 @@ export default function LinkList() {
 
               <div className="flex gap-2">
                 <Button
-                  loading={loading}
+                  loading={loading || uploadingImage}
                   type="submit"
                   variant="primary"
                   onClick={handleSubmit}
+                  disabled={
+                    !form.link || !form.nama || !form.image
+
+                    // link: "",
+                    // nama: "",
+                    // image: "",
+                    // customImage: null,
+                  }
                 >
                   Tambah
                 </Button>

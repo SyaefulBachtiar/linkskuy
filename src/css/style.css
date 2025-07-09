@@ -32,10 +32,10 @@
     background-color: rgba(201, 201, 201, 0.164);
     border-radius: 10px;
 }
-.sidebar-background{
+/* .sidebar-background{
     backdrop-filter: blur(0);
     filter: url(#glass-distortion);
-}
+} */
 .icon-menu{
     display: flex;
     flex-direction: column;

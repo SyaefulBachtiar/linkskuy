@@ -14,7 +14,7 @@ export default function Dashboard() {
       <>
         <DashboardPage>
           <div className="flow-root bg-blue-400/50">
-            <div className="mt-20 p-5">
+            <div className="mt-20">
               {/* Content */}
               <div>
                 {/* Profil */}
