@@ -30,7 +30,7 @@ export default function LinkList() {
   const [linkList, setLinkList] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -168,6 +168,7 @@ export default function LinkList() {
   useEffect(() => {
     const fetchLinks = async () => {
       try {
+        setIsLoading(true);
         let userId = null;
 
         // 🔍 Jika belum login (pengunjung), ambil userId dari Firestore
@@ -237,7 +238,8 @@ export default function LinkList() {
       let imageLama = null;
       // upload semua
       try {
-        if (form.image === "custom" && editId && editMode) {
+        if (typeof form.image === "string" && editId && editMode) {
+          console.log("tes");
           // Ambil image links berdasarkan userId
           const docRef = doc(db, "links", editId);
           const docSnap = await getDoc(docRef);
@@ -245,14 +247,14 @@ export default function LinkList() {
           if (docSnap.exists()) {
             const imageUrlLama = docSnap.data().customImagePath;
             imageLama = imageUrlLama;
-            console.log(imageLama);
-          }
+            console.log("Image lama: ", imageLama);
+        }
         }
         
-        if (form.image === "custom" && form.customImage instanceof File) {
+        if (typeof form.image === "string") {
           
           try {
-            if(form.image === "custom" && editMode && imageLama){
+            if(imageLama !== null){
               const {error : deleteError} = await supabase
               .storage
               .from(MY_SUPABASE_BUCKET_NAME)
@@ -263,6 +265,7 @@ export default function LinkList() {
                 console.log("Gambar lama berhasil dihapus");
               }
             }
+            if(form.image === "custom"){
             // 1. Buat nama file yang unik (penting!)
             const timeStampt = Date.now();
             filename = `uploads/${currentUser.uid}-${timeStampt}`;
@@ -290,6 +293,7 @@ export default function LinkList() {
             downloadURL = publicURLData.publicUrl;
 
             alert("Gambar kustom berhasil diunggah!");
+          }
           } catch (err) {
             console.error("Error mengunggah gambar kustom:", err);
             alert("Gagal mengunggah gambar kustom: " + err.message);
@@ -328,7 +332,7 @@ export default function LinkList() {
           navigate("/dashboard", {replace: true});
         } else {
           await addDoc(collection(db, "links"), newData);
-          navigate("/dashboard"), {replace: true};
+          navigate("/dashboard");
         }
       
      } catch (error) {

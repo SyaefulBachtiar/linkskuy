@@ -40,7 +40,7 @@ export default function Navbar(){
 
     return (
       <>
-        <nav className="pt-2 fixed top-0 w-screen flex justify-between h-[50px]">
+        <nav className="pt-2 fixed top-0 w-screen flex justify-between h-[50px] z-50">
           <div className="relative h-[50px]">
             <div className="">
               <Link to="/">
