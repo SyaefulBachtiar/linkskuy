@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Input from "../components/form-components/Input";
 import Button from "../components/form-components/Button";
 import { Lock, Mail, User2Icon } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { auth } from "../firebase/config";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 
 export default function Login(){
   const [errors, setErrors] = useState({});
@@ -12,6 +12,17 @@ export default function Login(){
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubcribe = onAuthStateChanged(auth, (user) => {
+      if(user){
+        navigate("/dashboard");
+      }else{
+        navigate("/login");
+      }
+    });
+    return () => unsubcribe();
+  },[])
 
   const handleSubmit = async(e) => {
     e.preventDefault();
@@ -34,8 +45,6 @@ export default function Login(){
 
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
-      // Redirect ke halaman dashboard atau home setelah login sukses
-      navigate("/dashboard");
     } catch (error) {
       console.error("Login Error:", error);
       if (error.code === "auth/user-not-found") {

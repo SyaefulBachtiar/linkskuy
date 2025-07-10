@@ -308,14 +308,6 @@ export default function LinkList() {
             ? { updatedAt: Timestamp.now() }
             : { createdAt: Timestamp.now() }),
         };
-        console.log("Data yang akan dikirim:", newData);
-        if (editMode && editId) {
-          await updateDoc(doc(db, "links", editId), newData);
-          navigate("/dashboard");
-        } else {
-          await addDoc(collection(db, "links"), newData);
-          navigate("/dashboard");
-        }
 
         // Refresh list
         const q = query(
@@ -327,7 +319,17 @@ export default function LinkList() {
           id: doc.id,
           ...doc.data(),
         }));
+        
         setLinkList(linksData);
+
+        console.log("Data yang akan dikirim:", newData);
+        if (editMode && editId) {
+          await updateDoc(doc(db, "links", editId), newData);
+          navigate("/dashboard");
+        } else {
+          await addDoc(collection(db, "links"), newData);
+          navigate("/dashboard");
+        }
       
      } catch (error) {
         console.error("Error adding link: ", error);
