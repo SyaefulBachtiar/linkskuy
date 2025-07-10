@@ -13,7 +13,7 @@ export default function Dashboard() {
     return (
       <>
         <DashboardPage>
-          <div className="flow-root bg-blue-400/50">
+          <div className="flow-root min-h-screen bg-blue-400/50">
             <div className="mt-20">
               {/* Content */}
               <div>
@@ -38,18 +38,18 @@ export default function Dashboard() {
                 </div> */}
 
                 {/* Produk */}
-                <div className="bg-white/50 p-5 rounded-md mt-10 flex flex-col">
-                  {/* Terlaris */}
+                {/* <div className="bg-white/50 p-5 rounded-md mt-10 flex flex-col">
+
                   <div className="p-2 py-7 font-montserrat font-semibold">
                     <h1 className="text-2xl">Terlaris 🔥</h1>
                   </div>
 
-                  {/* <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:[200px_minmax(900px,_1fr)_100px] gap-5">
+                  <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:[200px_minmax(900px,_1fr)_100px] gap-5">
 
                    <CardProduk ratting={ratting}/>
 
-                  </div> */}
-                </div>
+                  </div>
+                </div> */}
               </div>
             </div>
           </div>

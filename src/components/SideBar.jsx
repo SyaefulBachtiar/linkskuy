@@ -13,20 +13,36 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
           <div
             className={`side-bar relative transition-transform duration-300 ease-in-out transform overflow-hidden shadow-lg`}
           >
-            <div className="w-[300px] bg-cyan-100/50 blur-xl h-screen sidebar-background"></div>
-            <ul className="font-montserrat flex flex-col justify-items-end gap-3 h-screen w-[300px] text-white absolute top-0 -left-0 p-10">
+            <div className="w-[300px] bg-white/50 backdrop-blur-3xl h-screen sidebar-background"></div>
+            <ul className="font-montserrat flex flex-col justify-items-end gap-8 h-screen w-[300px] text-white absolute top-0 -left-0 p-10">
               {currentUser ? (
                 <>
-                  <li className={`${isDashboard ? "scale-125" : ""}`}>
-                    <Link to="/dahsboard">Dashboard</Link>
+                  <li>
+                    <Link
+                      to="/dashboard"
+                      className={`block p-5 text-black rounded-xl ${
+                        isDashboard
+                          ? "bg-white"
+                          : "bg-white/20 backdrop-blur-lg"
+                      }`}
+                    >
+                      Dashboard
+                    </Link>
                   </li>
-                  <li className={`${isTemplate ? "scale-110" : ""}`}>
-                    <Link to="/template">Template</Link>
+                  <li>
+                    <Link
+                      to="/template"
+                      className={`block p-5 text-black rounded-xl ${
+                        isTemplate ? "bg-white" : "bg-white/20 backdrop-blur-lg"
+                      }`}
+                    >
+                      Template
+                    </Link>
                   </li>
-                  <li className="font-bold">
+                  <li className="font-bold bg-white/20 backdrop-blur-lg p-5 rounded-xl">
                     <button
                       onClick={handleLogout}
-                      className="font-bold bg-white text-red-700 p-2 rounded-xl"
+                      className="font-bold text-red-500 rounded-xl"
                     >
                       Logout
                     </button>
@@ -34,10 +50,10 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
                 </>
               ) : (
                 <>
-                  <li className={`${isLayanan ? "scale-125" : ""}`}>
+                  <li className={`${isLayanan ? "bg-white" : ""}`}>
                     <Link to="/layanan">Layanan</Link>
                   </li>
-                  <li className={`${isTemplate ? "scale-110" : ""}`}>
+                  <li className={`${isTemplate ? "bg-white" : ""}`}>
                     <Link to="/template">Template</Link>
                   </li>
                   <li>

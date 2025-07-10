@@ -167,25 +167,6 @@ export default function LinkList() {
   // read data
   useEffect(() => {
     const fetchLinks = async () => {
-      // Fungsi helper untuk mendapatkan public URL gambar dari Supabase
-      // const resolveCustomImage = (imagePath) => {
-      //   if (!imagePath) return null;
-
-      //   const { data, error } = supabase.storage
-      //     .from(MY_SUPABASE_BUCKET_NAME)
-      //     .getPublicUrl(imagePath);
-
-      //   if (error) {
-      //     console.error(
-      //       "Error getting public URL from Supabase:",
-      //       error.message
-      //     );
-      //     return null;
-      //   }
-
-      //   return data?.publicUrl || null;
-      // };
-
       try {
         let userId = null;
 
@@ -330,11 +311,9 @@ export default function LinkList() {
         console.log("Data yang akan dikirim:", newData);
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
-          alert("Link berhasil diperbarui!");
           navigate("/dashboard");
         } else {
           await addDoc(collection(db, "links"), newData);
-          alert("Link berhasil ditambahkan!");
           navigate("/dashboard");
         }
 
@@ -382,7 +361,7 @@ export default function LinkList() {
       await deleteDoc(doc(db, "links", id));
       setLinkList((prevList) => prevList.filter((item) => item.id !== id));
       alert("Link berhasil dihapus!");
-      navigate('/')
+      navigate('/dashboard');
     } catch (error) {
       console.error("Error deleting link: ", error);
       alert("Gagal menghapus link: " + error.message);
@@ -393,7 +372,7 @@ export default function LinkList() {
   return (
     <>
       {/* Link list */}
-      <div className="mt-20 p-10">
+      <div className="p-10">
         {/* List */}
         <div className="flex flex-col gap-5 font-montserrat text-3xl">
           {/* Read firebase disini */}
@@ -403,7 +382,7 @@ export default function LinkList() {
             linkList.map((item) => (
               <div
                 key={item.id}
-                className="bg-white border rounded-xl p-5 gap-2 flex items-center text-sm sm:text-sm md:text-base lg:text-lg xl:text-4xl"
+                className="bg-white border shadow-lg rounded-xl p-5 gap-2 flex items-center text-sm sm:text-sm md:text-base lg:text-lg xl:text-4xl"
               >
                 {/* Gambar */}
                 <a
@@ -465,19 +444,14 @@ export default function LinkList() {
                 )}
               </div>
             ))
-          ) : (
-            <>
-              <p className="text-center text-gray-500">
-                Belum ada link yang ditambahkan.
-              </p>
-            </>
-          )}
+          ) : ""}
         </div>
 
         {/* Button tambah link */}
         {currentUser ? (
           <>
-            <div className="flex justify-center">
+            <div className="font-montserrat text-4xl my-12 flex justify-center items-center flex-col ">
+              <h1 className="text-center">Tambahkan Link</h1>
               <button
                 onClick={() => setTambahLink(true)}
                 className="bg-blue-500 w-[50px] h-[50px] flex justify-center items-center rounded-[50%] text-white mt-5"
