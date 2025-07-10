@@ -7,7 +7,7 @@ import { db } from "../../firebase/config";
 import { auth } from "../../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
 import Loading from "../form-components/Loading";
-import { useNavigate, useParams } from "react-router-dom";
+import { replace, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../supabase/supabaseClient";
 
 
@@ -325,10 +325,10 @@ export default function LinkList() {
         console.log("Data yang akan dikirim:", newData);
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
-          navigate("/dashboard");
+          navigate("/dashboard", {replace: true});
         } else {
           await addDoc(collection(db, "links"), newData);
-          navigate("/dashboard");
+          navigate("/dashboard"), {replace: true};
         }
       
      } catch (error) {
@@ -363,11 +363,11 @@ export default function LinkList() {
       await deleteDoc(doc(db, "links", id));
       setLinkList((prevList) => prevList.filter((item) => item.id !== id));
       alert("Link berhasil dihapus!");
-      navigate('/dashboard');
+      navigate('/dashboard', {replace: true});
     } catch (error) {
       console.error("Error deleting link: ", error);
       alert("Gagal menghapus link: " + error.message);
-      navigate("/dashboard");
+      navigate("/dashboard", {replace:true});
     }
   };
 

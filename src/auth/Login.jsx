@@ -13,16 +13,6 @@ export default function Login(){
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubcribe = onAuthStateChanged(auth, (user) => {
-      if(user){
-        navigate("/dashboard");
-      }else{
-        navigate("/login");
-      }
-    });
-    return () => unsubcribe();
-  },[])
 
   const handleSubmit = async(e) => {
     e.preventDefault();
@@ -45,6 +35,7 @@ export default function Login(){
 
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
+      navigate('/dashboard', {replace: true})
     } catch (error) {
       console.error("Login Error:", error);
       if (error.code === "auth/user-not-found") {
