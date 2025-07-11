@@ -236,64 +236,94 @@ export default function LinkList() {
       let filename = null;
       let imageUpload = form.customImage;
       let imageLama = null;
+      let imageLamaCustom = null;
       // upload semua
       try {
         if (typeof form.image === "string" && editId && editMode) {
-          console.log("tes");
           // Ambil image links berdasarkan userId
           const docRef = doc(db, "links", editId);
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
-            const imageUrlLama = docSnap.data().customImagePath;
+            const data = docSnap.data();
+            const imageUrlLama = data.customImagePath;
+            const customImageLama = data.customImage;
+            imageLamaCustom = customImageLama;
             imageLama = imageUrlLama;
-            console.log("Image lama: ", imageLama);
+            console.log("Image lama: ", imageLama, "Image upload: ", imageUpload);
         }
         }
-        
         if (typeof form.image === "string") {
           
           try {
-            if(imageLama !== null){
-              const {error : deleteError} = await supabase
-              .storage
-              .from(MY_SUPABASE_BUCKET_NAME)
-              .remove([imageLama]);
-              if (deleteError) {
-                console.error("Gagal hapus gambar lama:", deleteError.message);
+            if (form.image === "custom") {
+              // cek image lama ada atau tidak
+              if (editMode && imageLama === null) {
+                // debug
+                console.log("diisi filename baru");
+
+                // 1. Buat nama file yang unik (penting!)
+                const timeStampt = Date.now();
+                filename = `uploads/${currentUser.uid}-${timeStampt}`;
+
+                // 2. Unggah file ke Supabase Storage
+                const { data, error: uploadError } = await supabase.storage
+                  .from(MY_SUPABASE_BUCKET_NAME)
+                  .upload(filename, imageUpload, {
+                    cacheControl: "3600",
+                    upsert: false,
+                    metadata: {
+                      user_id: currentUser.uid, // pastikan ini bukan undefined/null
+                    },
+                  });
+
+                if (uploadError) {
+                  throw uploadError;
+                }
+
+                // 3. Dapatkan URL publik dari file yang baru diunggah
+                const { data: publicURLData } = supabase.storage
+                  .from(MY_SUPABASE_BUCKET_NAME)
+                  .getPublicUrl(filename);
+
+                downloadURL = publicURLData.publicUrl;
+                alert("Gambar kustom berhasil diunggah!");
               } else {
-                console.log("Gambar lama berhasil dihapus");
+                // filename lama
+                downloadURL = imageLamaCustom;
+                filename = imageLama;
+                alert("Gambar kostum tetap");
+              }
+
+              if (imageLama !== null && imageLamaCustom !== downloadURL && !editMode) {
+                const { error: deleteError } = await supabase.storage
+                  .from(MY_SUPABASE_BUCKET_NAME)
+                  .remove([imageLama]);
+                if (deleteError) {
+                  console.error(
+                    "Gagal hapus gambar lama:",
+                    deleteError.message
+                  );
+                } else {
+                  console.log("Gambar lama berhasil dihapus");
+                }
+              }
+      
+            }else{
+              if(imageLama){
+                const { error: deleteError } = await supabase.storage
+                  .from(MY_SUPABASE_BUCKET_NAME)
+                  .remove([imageLama]);
+                if (deleteError) {
+                  console.error(
+                    "Gagal hapus gambar lama:",
+                    deleteError.message
+                  );
+                } else {
+                  console.log("Gambar lama berhasil dihapus");
+                }
               }
             }
-            if(form.image === "custom"){
-            // 1. Buat nama file yang unik (penting!)
-            const timeStampt = Date.now();
-            filename = `uploads/${currentUser.uid}-${timeStampt}`;
-
-            // 2. Unggah file ke Supabase Storage
-            const { data, error: uploadError } = await supabase.storage
-              .from(MY_SUPABASE_BUCKET_NAME)
-              .upload(filename, imageUpload, {
-                cacheControl: "3600",
-                upsert: false,
-                metadata: {
-                  user_id: currentUser.uid, // pastikan ini bukan undefined/null
-                },
-              });
-
-            if (uploadError) {
-              throw uploadError;
-            }
-
-            // 3. Dapatkan URL publik dari file yang baru diunggah
-            const { data: publicURLData } = supabase.storage
-              .from(MY_SUPABASE_BUCKET_NAME)
-              .getPublicUrl(filename);
-
-            downloadURL = publicURLData.publicUrl;
-
-            alert("Gambar kustom berhasil diunggah!");
-          }
           } catch (err) {
             console.error("Error mengunggah gambar kustom:", err);
             alert("Gagal mengunggah gambar kustom: " + err.message);
@@ -329,10 +359,10 @@ export default function LinkList() {
         console.log("Data yang akan dikirim:", newData);
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
-          navigate("/dashboard", {replace: true});
+          navigate("/dashboard", { replace: true });
         } else {
           await addDoc(collection(db, "links"), newData);
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
         }
       
      } catch (error) {
