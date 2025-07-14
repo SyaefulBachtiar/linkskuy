@@ -38,17 +38,17 @@ export default function Dashboard() {
                 </div> */}
 
                 {/* Produk */}
-                {/* <div className="bg-white/50 p-5 rounded-md mt-10 flex flex-col">
+                <div className="bg-white/50 p-5 rounded-md mt-10 flex flex-col">
 
-                  <div className="p-2 py-7 font-montserrat font-semibold">
+                  {/* <div className="p-2 py-7 font-montserrat font-semibold">
                     <h1 className="text-2xl">Terlaris 🔥</h1>
-                  </div>
+                  </div> */}
 
                   
 
                    <CardProduk ratting={ratting}/>
 
-                </div> */}
+                </div>
               </div>
             </div>
           </div>

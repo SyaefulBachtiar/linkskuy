@@ -155,9 +155,22 @@ export default function ProfilHeader() {
     // file name variabel
     let filename = null;
     let downloadURL = null;
+    let imageLama = null;
+    let imageProfil = null;
 
     // Upload image ke supabase
     try{
+      if(editId){
+        const docRef = doc(db, "users", editId.dataProfil);
+        const docSnap = await getDoc(docRef);
+
+        if(docSnap.exists()){
+          const data = docSnap.data();
+          imageLama = data.customImagePath;
+          imageProfil = data.profilImg;
+        }
+      }
+      if(editId || imageLama === null){
       const timeStapm = Date.now();
       filename = `uploadpProfile/${currentUser.uid}-${timeStapm}`;
 
@@ -178,6 +191,22 @@ export default function ProfilHeader() {
 
       downloadURL = publicURLData.publicUrl;
       alert("Gambar kustom berhasil diunggah!");
+    }else{
+      filename = imageLama;
+      downloadURL = imageProfil;
+      console.log("gambar tetap");
+    }
+
+    if(imageLama !== null){
+      const {error: deleteError} = supabase.storage
+      .from(MY_SUPABASE_BUCKET_NAME)
+      .remove([imageLama])
+       if (deleteError) {
+         console.error("Gagal hapus gambar lama:", deleteError.message);
+       } else {
+         console.log("Gambar lama berhasil dihapus");
+       }
+    }
 
       // upload ke firebase
       const newDataUser = {
@@ -379,7 +408,7 @@ export default function ProfilHeader() {
                   : profil[0].profilImg
               }
               alt="Profil"
-              className="object-cover rounded-[50%] h-full w-full"
+              className="object-cover rounded-[50%] h-full w-full shadow-lg"
             />
           ) : (
             <p>User tidak di temukan</p>
@@ -413,14 +442,11 @@ export default function ProfilHeader() {
             {sosmed.length > 0 && sosmed[0].sosialmedia
               ? sosmed.map((item) => (
                   <a
-                  key={item.id}
+                    key={item.id}
                     href={item.link}
                     className="bg-cyan-200 p-3 rounded-md hover:scale-110 transition-transform ease-in-out transform"
                   >
-                    {
-                      
-                      sosmedICon.find((opt) => opt.id === item.sosialmedia).icon
-                    }
+                    {sosmedICon.find((opt) => opt.id === item.sosialmedia).icon}
                   </a>
                 ))
               : null}
@@ -490,7 +516,7 @@ export default function ProfilHeader() {
                 error={errors.profilNama}
               />
 
-           <div className="mb-3">
+              <div className="mb-3">
                 <label
                   htmlFor="socialMedia"
                   className="block text-sm font-medium text-gray-700 mb-2"
