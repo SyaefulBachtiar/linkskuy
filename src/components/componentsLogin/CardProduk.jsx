@@ -7,7 +7,7 @@ import { useParams } from "react-router-dom";
 
 export default function CardProduk({ ratting }) {
   const [currentUser, setCurrentUser] = useState(null);
-  const displayName = useParams();
+  const {displayName} = useParams();
   const [userOwn, setUserOwn] = useState(null);
   const [userUrl, setUserUrl] = useState(null);
   const [products, setProducts] = useState([]);
@@ -93,7 +93,7 @@ export default function CardProduk({ ratting }) {
     <>
       {/* Card produk */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {currentUser
+        {userUrl || userOwn
           ? products.map((produk) => (
               <div
                 key={produk.id}
