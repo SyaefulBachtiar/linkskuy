@@ -356,7 +356,6 @@ export default function LinkList() {
         
         setLinkList(linksData);
 
-        console.log("Data yang akan dikirim:", newData);
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
           navigate("/dashboard", { replace: true });
