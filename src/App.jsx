@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import Footer from "./components/Footer";
+// import Footer from "./components/Footer";
 import LandingPageLayout from "./layouts/LandingPageLayout";
 import "./css/style.css"
 import Login from "./auth/Login";
@@ -38,7 +38,6 @@ function App() {
           }
         />
       </Routes>
-      <Footer />
     </>
   );
 }
