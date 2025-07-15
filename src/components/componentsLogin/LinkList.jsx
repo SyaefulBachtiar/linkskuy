@@ -194,7 +194,7 @@ export default function LinkList() {
 
         // Ambil data links berdasarkan userId
         const linksRef = collection(db, "links");
-        const qLinks = query(linksRef, where("userId", "==", userId));
+        const qLinks = query(linksRef, where("uuid", "==", userId));
         const linksSnapshot = await getDocs(qLinks);
 
        
@@ -287,12 +287,10 @@ export default function LinkList() {
                   .getPublicUrl(filename);
 
                 downloadURL = publicURLData.publicUrl;
-                alert("Gambar kustom berhasil diunggah!");
               } else {
                 // filename lama
                 downloadURL = imageLamaCustom;
                 filename = imageLama;
-                alert("Gambar kostum tetap");
               }
 
               if (imageLama !== null && imageLamaCustom !== downloadURL && !editMode) {
@@ -332,12 +330,12 @@ export default function LinkList() {
           }
         }
         const newData = {
+          uuid: currentUser.uid,
           nama: form.nama,
           link: form.link,
           image: form.image,
           customImage: form.image === "custom" ? downloadURL : null,
           customImagePath: form.image === "custom" ? filename : null,
-          userId: currentUser.uid,
           ...(editMode
             ? { updatedAt: Timestamp.now() }
             : { createdAt: Timestamp.now() }),
@@ -346,7 +344,7 @@ export default function LinkList() {
         // Refresh list
         const q = query(
           collection(db, "links"),
-          where("userId", "==", currentUser.uid)
+          where("uuid", "==", currentUser.uid)
         );
         const querySnapshot = await getDocs(q);
         const linksData = querySnapshot.docs.map((doc) => ({
@@ -358,10 +356,10 @@ export default function LinkList() {
 
         if (editMode && editId) {
           await updateDoc(doc(db, "links", editId), newData);
-          navigate("/dashboard", { replace: true });
+          window.location.reload();
         } else {
           await addDoc(collection(db, "links"), newData);
-          navigate("/dashboard", { replace: true });
+          window.location.reload();
         }
       
      } catch (error) {
@@ -396,11 +394,11 @@ export default function LinkList() {
       await deleteDoc(doc(db, "links", id));
       setLinkList((prevList) => prevList.filter((item) => item.id !== id));
       alert("Link berhasil dihapus!");
-      navigate('/dashboard', {replace: true});
+      window.location.reload();
     } catch (error) {
       console.error("Error deleting link: ", error);
       alert("Gagal menghapus link: " + error.message);
-      navigate("/dashboard", {replace:true});
+      window.location.reload();
     }
   };
 

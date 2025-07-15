@@ -1,16 +1,47 @@
 import { useEffect, useRef, useState } from "react";
 import { auth } from "../../firebase/config"; // pastikan path sesuai
 import { onAuthStateChanged } from "firebase/auth";
-import { Link, Link2, LucideFacebook, LucideInstagram, LucideTwitter, PenSquare, User } from "lucide-react";
+import {
+  Link,
+  Link2,
+  LucideFacebook,
+  LucideInstagram,
+  LucideTwitter,
+  PenSquare,
+  User,
+} from "lucide-react";
 import { useParams } from "react-router-dom";
-import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, Timestamp, updateDoc, where } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { db } from "../../firebase/config";
 import Input from "../form-components/Input";
 import Button from "../form-components/Button";
-import { FaFacebook, FaInstagram, FaLinkedin, FaPinterest, FaSnapchat, FaTelegram, FaTiktok, FaTwitter, FaWhatsapp, FaYoutube } from "react-icons/fa";
+import {
+  FaFacebook,
+  FaInstagram,
+  FaLinkedin,
+  FaPinterest,
+  FaSnapchat,
+  FaTelegram,
+  FaTiktok,
+  FaTwitter,
+  FaWhatsapp,
+  FaYoutube,
+} from "react-icons/fa";
 import { supabase } from "../../supabase/supabaseClient";
 
-const MY_SUPABASE_BUCKET_NAME = "linkkk"; 
+const MY_SUPABASE_BUCKET_NAME = "linkkk";
 
 export default function ProfilHeader() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -22,26 +53,32 @@ export default function ProfilHeader() {
   const [sosmed, setSosmed] = useState([]);
   const [profileOpsi, setProfileOpsi] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
-  const [errors, setErrors] = useState([]);
+  const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [uploadingImage, setUploadingImage] = useState(false);
   const [preview, setPreview] = useState(null);
   const [editId, setEditId] = useState({});
+
+  // Inisialisasi form dengan default value yang proper
   const [form, setForm] = useState({
     profilImg: "",
     profilNama: "",
-    sosialMedia: "",
-    link: "",
+    socialMediaList: [
+      {
+        sosialMedia: "",
+        link: "",
+      },
+    ],
   });
+
   const { displayName } = useParams();
   const linkText = `https://linkskuy.vercel.app/${currentUser?.displayName}`;
   const modal = useRef(null);
   const opsi = useRef(null);
 
-
   // Array untuk dropdown media sosial
   const socialMediaOptions = [
-    { value: "", label: "Pilih Media Sosial", disabled: true},
+    { value: "", label: "Pilih Media Sosial", disabled: true },
     { value: "instagram", label: "Instagram" },
     { value: "facebook", label: "Facebook" },
     { value: "twitter", label: "Twitter/X" },
@@ -68,19 +105,52 @@ export default function ProfilHeader() {
     { id: "pinterest", icon: <FaPinterest /> },
   ];
 
+  // Fungsi untuk menambah social media baru
+  const addSocialMedia = () => {
+    setForm((prev) => ({
+      ...prev,
+      socialMediaList: [
+        ...prev.socialMediaList,
+        {
+          sosialMedia: "",
+          link: "",
+        },
+      ],
+    }));
+  };
+
+  // Fungsi untuk menghapus social media
+  const removeSocialMedia = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      socialMediaList: prev.socialMediaList.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Fungsi untuk menangani perubahan pada social media
+  const handleSocialMediaChange = (index, field, value) => {
+    console.log(value);
+    setForm((prev) => ({
+      ...prev,
+      socialMediaList: prev.socialMediaList.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  };
+
   // Klik di luar modal
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if(modal.current && !modal.current.contains(event.target)){
+      if (modal.current && !modal.current.contains(event.target)) {
         setEditProfile(false);
       }
-    }
+    };
 
     const handleClickOutsideOpsi = (event) => {
-      if(opsi.current && !opsi.current.contains(event.target)){
+      if (opsi.current && !opsi.current.contains(event.target)) {
         setProfileOpsi(false);
       }
-    }
+    };
 
     document.addEventListener("mousedown", handleClickOutsideOpsi);
     document.addEventListener("mousedown", handleClickOutside);
@@ -88,7 +158,7 @@ export default function ProfilHeader() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("mousedown", handleClickOutsideOpsi);
-    }
+    };
   }, [setEditProfile, setProfileOpsi]);
 
   // Image default
@@ -128,7 +198,7 @@ export default function ProfilHeader() {
     }
     // loading image
     console.log(uploadingImage);
-    setUploadingImage(true); 
+    setUploadingImage(true);
 
     // Validate file size (max 5MB)
     const MAX_FILE_SIZE_MB = 5;
@@ -145,12 +215,26 @@ export default function ProfilHeader() {
       setProfileOpsi(false);
     }
   };
-
-  // handle submit
+  
+  // handle submit - diperbaiki untuk menangani multiple social media
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
+    // Validasi bahwa setiap social media memiliki platform dan link
+    const isValid = form.socialMediaList.every(
+      (item) =>
+        item.sosialMedia &&
+        item.sosialMedia !== "" &&
+        item.link &&
+        item.link !== ""
+    );
+
+    if (!isValid) {
+      alert("Harap lengkapi semua field social media");
+      setLoading(false);
+      return;
+    }
 
     // file name variabel
     let filename = null;
@@ -158,55 +242,62 @@ export default function ProfilHeader() {
     let imageLama = null;
     let imageProfil = null;
 
+
     // Upload image ke supabase
-    try{
-      if(editId){
+    try {
+      if (editId) {
         const docRef = doc(db, "users", editId.dataProfil);
         const docSnap = await getDoc(docRef);
 
-        if(docSnap.exists()){
+        if (docSnap.exists()) {
           const data = docSnap.data();
           imageLama = data.customImagePath;
           imageProfil = data.profilImg;
+          console.log(imageLama);
         }
       }
-      if(editId || imageLama === null){
-      const timeStapm = Date.now();
-      filename = `uploadpProfile/${currentUser.uid}-${timeStapm}`;
 
-      const { data, error: uploadError } = await supabase.storage
-        .from(MY_SUPABASE_BUCKET_NAME)
-        .upload(filename, form.profilImg, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      const isNewImageUploaded = form.profilImg instanceof File;
+      // cek apakah image profil nya kosong atau tidak kosong
+        // cek apakah image lama nya null
+        if (isNewImageUploaded) {
+          const timeStapm = Date.now();
+          filename = `uploadpProfile/${currentUser.uid}-${timeStapm}`;
 
-      if (uploadError) {
-        throw uploadError;
+          const { data, error: uploadError } = await supabase.storage
+            .from(MY_SUPABASE_BUCKET_NAME)
+            .upload(filename, form.profilImg, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          const { data: publicURLData } = supabase.storage
+            .from(MY_SUPABASE_BUCKET_NAME)
+            .getPublicUrl(filename);
+
+          downloadURL = publicURLData.publicUrl;
+          alert("Gambar b berhasil diunggah!");
+        }  else {
+          filename = imageLama;
+          downloadURL = imageProfil;
+          console.log("gambar tetap");
+        }
+        
+
+      if (imageLama !== null && imageProfil !== downloadURL) {
+        const { error: deleteError } = supabase.storage
+          .from(MY_SUPABASE_BUCKET_NAME)
+          .remove([imageLama]);
+        if (deleteError) {
+          console.error("Gagal hapus gambar lama:", deleteError.message);
+        } else {
+          console.log("Gambar lama berhasil dihapus");
+        }
       }
-
-      const { data: publicURLData } = supabase.storage
-        .from(MY_SUPABASE_BUCKET_NAME)
-        .getPublicUrl(filename);
-
-      downloadURL = publicURLData.publicUrl;
-      alert("Gambar kustom berhasil diunggah!");
-    }else{
-      filename = imageLama;
-      downloadURL = imageProfil;
-      console.log("gambar tetap");
-    }
-
-    if(imageLama !== null){
-      const {error: deleteError} = supabase.storage
-      .from(MY_SUPABASE_BUCKET_NAME)
-      .remove([imageLama])
-       if (deleteError) {
-         console.error("Gagal hapus gambar lama:", deleteError.message);
-       } else {
-         console.log("Gambar lama berhasil dihapus");
-       }
-    }
 
       // upload ke firebase
       const newDataUser = {
@@ -215,9 +306,8 @@ export default function ProfilHeader() {
         profilImg: downloadURL || "",
         customImagePath: filename || "",
         createdAt: Timestamp.now(),
-        updateAt: Timestamp.now()
+        updateAt: Timestamp.now(),
       };
-    
 
       if (editId) {
         await updateDoc(doc(db, "users", editId.dataProfil), newDataUser);
@@ -226,15 +316,56 @@ export default function ProfilHeader() {
         await addDoc(collection(db, "users"), newDataUser);
         console.log("Berhasil menyimpan data user");
       }
-    }catch(error){
+
+     try{
+       // Simpan social media ke collection sosmed
+       // Hapus semua social media lama terlebih dahulu
+       const sosmedRef = collection(db, "sosmed");
+       const querySosmed = query(
+         sosmedRef,
+         where("uuid", "==", currentUser.uid)
+       );
+       const sosmedSnapshot = await getDocs(querySosmed);
+
+       // Hapus data sosmed lama
+       if (sosmedSnapshot.docs.length > 0) {
+         const deletePromises = sosmedSnapshot.docs.map(
+           (doc) => deleteDoc(doc.ref) // Hapus permanent
+         );
+         await Promise.all(deletePromises);
+         console.log("Berhasil hapus data sosmed lama");
+       }
+
+       // Tunggu sebentar untuk memastikan operasi hapus selesai
+       await new Promise((resolve) => setTimeout(resolve, 300));
+
+       // Simpan social media baru
+       const socialMediaPromises = form.socialMediaList.map((socialMedia) => {
+         const newSocialMedia = {
+           uuid: currentUser.uid,
+           sosialmedia: socialMedia.sosialMedia,
+           link: socialMedia.link,
+           createdAt: Timestamp.now(),
+           updateAt: Timestamp.now(),
+         };
+         return addDoc(collection(db, "sosmed"), newSocialMedia);
+       });
+
+       await Promise.all(socialMediaPromises);
+       console.log("Berhasil menyimpan semua social media");
+     }catch(error){
+      console.log("gagal meyimpan sosial media: ", error);
+     }
+    } catch (error) {
       console.log("Gagal upload image: ", error);
       setLoading(false);
-    }finally{
+    } finally {
       setLoading(false);
       setEditProfile(false);
+      // Refresh data setelah submit
+      window.location.reload();
     }
-  }
-
+  };
 
   // handle read profile user
   useEffect(() => {
@@ -299,7 +430,6 @@ export default function ProfilHeader() {
         setSosmed(sosmedData);
       } catch (error) {
         console.log("Gagal manampilkan data: ", error);
-        setUserStatus(false);
       } finally {
         setLoadingUser(false);
       }
@@ -310,24 +440,24 @@ export default function ProfilHeader() {
     }
   }, [currentUser, displayName]);
 
-
   // Handle change
-    const handleChange = (e) => {
-      const { name, value } = e.target;
-      setForm((prevForm) => ({
-        ...prevForm,
-        [name]: value,
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    // console.log(value);
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
+
+    if (errors[name]) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [name]: "",
       }));
+    }
+  };
 
-      if (errors[name]) {
-        setErrors((prevErrors) => ({
-          ...prevErrors,
-          [name]: "",
-        }));
-      }
-    };
-
-    const handleBlur = (e) => {
+  const handleBlur = (e) => {
     const { name } = e.target;
     setTouched({ ...touched, [name]: true });
     validateField(name, form[name]);
@@ -343,12 +473,6 @@ export default function ProfilHeader() {
     if (name === "profilNama") {
       if (!value) error = "Nama link wajib diisi";
     }
-    if(name === "sosialMedia"){
-      if(!value) error = "Sosial media harus diisi";
-    }
-    if(name === "link"){
-      if(!value) error = "Link harus diisi!";
-    }
 
     setErrors({ ...errors, [name]: error });
     return !error;
@@ -362,7 +486,6 @@ export default function ProfilHeader() {
     return () => unsubscribe();
   }, []);
 
-
   return (
     <>
       <div className="flex justify-center flex-col gap-5 items-center mt-[100px]">
@@ -372,18 +495,23 @@ export default function ProfilHeader() {
               <button
                 onClick={() => {
                   const data = profil[0];
-                  let dataSosmed = null;
+
+                  // Siapkan socialMediaList dari data sosmed yang ada
+                  let socialMediaList = [{ sosialMedia: "", link: "" }];
 
                   if (sosmed.length > 0) {
-                    dataSosmed = sosmed[0].sosialMedia;
+                    socialMediaList = sosmed.map((item) => ({
+                      sosialMedia: item.sosialmedia || "",
+                      link: item.link || "",
+                    }));
                   }
 
                   const newForm = {
                     profilImg: data.profilImg || "",
                     profilNama: data.displayName || "",
-                    sosialMedia: dataSosmed || "",
-                    link: dataSosmed || "",
+                    socialMediaList: socialMediaList,
                   };
+
                   setEditId({
                     dataProfil: data.id,
                   });
@@ -446,7 +574,10 @@ export default function ProfilHeader() {
                     href={item.link}
                     className="bg-cyan-200 p-3 rounded-md hover:scale-110 transition-transform ease-in-out transform"
                   >
-                    {sosmedICon.find((opt) => opt.id === item.sosialmedia).icon}
+                    {
+                      sosmedICon.find((opt) => opt.id === item.sosialmedia)
+                        ?.icon
+                    }
                   </a>
                 ))
               : null}
@@ -516,62 +647,125 @@ export default function ProfilHeader() {
                 error={errors.profilNama}
               />
 
+              {/* Social Media Fields */}
               <div className="mb-3">
-                <label
-                  htmlFor="socialMedia"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Media Sosial
                 </label>
-                <select
-                  id="sosialMedia"
-                  name="sosialMedia"
-                  value={form.sosialMedia}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border ${
-                    errors.sosialMedia && touched.sosialMedia
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                  required
-                >
-                  {socialMediaOptions.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                      disabled={option.disabled}
-                    >
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.sosialMedia && touched.sosialMedia && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.sosialMedia}
-                  </p>
-                )}
-              </div>
 
-              <Input
-                icon={<Link2 />}
-                label="link"
-                id="link"
-                name="link"
-                type="text"
-                value={form.link}
-                required={true}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.link}
-              />
+                {/* Pastikan socialMediaList ada sebelum di-map */}
+                {form.socialMediaList &&
+                  form.socialMediaList.length > 0 &&
+                  form.socialMediaList.map((socialMedia, index) => (
+                    <div
+                      key={index}
+                      className="mb-3 p-3 border border-gray-200 rounded-md"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-600">
+                          Media Sosial {index + 1}
+                        </span>
+                        {form.socialMediaList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeSocialMedia(index)}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="mb-2">
+                        <select
+                          name={`sosialMedia-${index}`}
+                          value={socialMedia.sosialMedia}
+                          onChange={(e) =>
+                            handleSocialMediaChange(
+                              index,
+                              "sosialMedia",
+                              e.target.value
+                            )
+                          }
+                          onBlur={handleBlur}
+                          className={`w-full px-3 py-2 border ${
+                            errors[`sosialMedia-${index}`] &&
+                            touched[`sosialMedia-${index}`]
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                          required
+                        >
+                          {socialMediaOptions.map((option) => (
+                            <option
+                              key={option.value}
+                              value={option.value}
+                              disabled={option.disabled}
+                            >
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        {errors[`sosialMedia-${index}`] &&
+                          touched[`sosialMedia-${index}`] && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors[`sosialMedia-${index}`]}
+                            </p>
+                          )}
+                      </div>
+
+                      <div>
+                        <Input
+                          icon={<Link2 />}
+                          label="Link"
+                          id={`link-${index}`}
+                          name={`link-${index}`}
+                          type="text"
+                          value={socialMedia.link}
+                          required={true}
+                          onChange={(e) =>
+                            handleSocialMediaChange(
+                              index,
+                              "link",
+                              e.target.value
+                            )
+                          }
+                          onBlur={handleBlur}
+                          error={errors[`link-${index}`]}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                {/* Add Social Media Button */}
+                <button
+                  type="button"
+                  onClick={addSocialMedia}
+                  className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Tambah Media Sosial
+                </button>
+              </div>
               <div className="mt-10 flex gap-2">
                 <Button
                   loading={loading || uploadingImage}
                   type="submit"
                   variant="primary"
                 >
-                  Tambah
+                  Simpan
                 </Button>
 
                 <Button
