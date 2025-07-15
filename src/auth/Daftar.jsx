@@ -2,9 +2,10 @@ import { useState } from "react";
 import Input from "../components/form-components/Input";
 import Button from "../components/form-components/Button";
 import { Lock, Mail, User, UserPlus } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "../firebase/config";
+import { auth, db } from "../firebase/config";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
 
 
 export default function Daftar(){
@@ -13,6 +14,7 @@ export default function Daftar(){
     const [touched, setTouched] = useState({});
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleSubmit = async(e) => {
       e.preventDefault();
@@ -20,11 +22,7 @@ export default function Daftar(){
 
       const newErrors = {};
 
-      Object.keys(form).forEach((key) => {
-        if (key !== "customImage" && !form[key]) {
-          newErrors[key] = `${key} wajib diisi!`;
-        }
-      });
+
       if(form.password !== form.password2){
         newErrors.password2 = "Password tidak cocok!";
       }
@@ -44,7 +42,18 @@ export default function Daftar(){
           displayName: form.namaLengkap,
         })
 
-        alert("Pendaftaran berhasil!");
+        const data = {
+          uuid: userCredential.user.uid,
+          displayName: form.namaLengkap,
+          profilImg: "",
+          customImagePath: "",
+          createdAt: Timestamp.now(),
+          updateAt: Timestamp.now(),
+        };
+
+        await addDoc(collection(db, "users"), data);
+
+        navigate("/login");
       }catch(error){
         console.error("Error Daftar: ", error );
         if(error.code === "auth/email-already-in-use"){
