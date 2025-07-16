@@ -40,7 +40,7 @@ export default function Navbar(){
 
     return (
       <>
-        <nav className="pt-2 fixed top-0 w-screen flex justify-between h-[50px] z-50">
+        <nav className=" fixed top-0 w-screen flex justify-between items-center h-[66px] bg-white/20 backdrop-blur-2xl z-50 shadow-sm">
           <div className="relative h-[50px]">
             <div className="">
               <Link to="/">
@@ -50,29 +50,6 @@ export default function Navbar(){
               </Link>
             </div>
           </div>
-          {/* Efek kaca */}
-          <svg className="filter">
-            <filter id="glass-distortion">
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="10"
-                result="smoothed"
-              />
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.009"
-                numOctaves="10"
-                stitchTiles="stitch"
-              />
-              <feDisplacementMap
-                in="SourceGraphic"
-                scale="100"
-                xChannelSelector="R"
-                yChannelSelector="G"
-              />
-              <feGaussianBlur in="distorted" stdDeviation="0.3" />
-            </filter>
-          </svg>
           <IconNavbar menuActive={menuActive} clicIconkMenu={clicIconkMenu} />
           <div className="nav w-[40%] mx-14 items-center hidden sm:hidden md:flex lg:flex xl:flex">
             <ul className=" font-montserrat flex w-full justify-center gap-10 text-white items-center">
@@ -81,7 +58,9 @@ export default function Navbar(){
                   <li>
                     <Link
                       to="/dashboard"
-                      className={`${isDashboardActive ? "bg-gray-500" : ""}`}
+                      className={`text-black ${
+                        isDashboardActive ? "bg-gray-500" : ""
+                      }`}
                     >
                       Dashboard
                     </Link>
@@ -89,7 +68,9 @@ export default function Navbar(){
                   <li>
                     <Link
                       to="/template"
-                      className={`${isTemplatePageActive ? "bg-gray-500" : ""}`}
+                      className={`text-black  ${
+                        isTemplatePageActive ? "bg-gray-500" : ""
+                      }`}
                     >
                       Template
                     </Link>

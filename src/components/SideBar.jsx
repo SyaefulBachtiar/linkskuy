@@ -13,14 +13,14 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
           <div
             className={`side-bar relative transition-transform duration-300 ease-in-out transform overflow-hidden shadow-lg`}
           >
-            <div className="w-[300px] bg-white/50 backdrop-blur-3xl h-screen sidebar-background"></div>
+            <div className="w-[300px] bg-white h-screen sidebar-background"></div>
             <ul className="font-montserrat flex flex-col justify-items-end gap-8 h-screen w-[300px] text-white absolute top-0 -left-0 p-10">
               {currentUser ? (
                 <>
                   <li>
                     <Link
                       to="/dashboard"
-                      className={`block p-5 text-black rounded-xl ${
+                      className={`block p-5 text-black rounded-xl shadow-sm ${
                         isDashboard
                           ? "bg-white"
                           : "bg-white/20 backdrop-blur-lg"
@@ -32,7 +32,7 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
                   <li>
                     <Link
                       to="/template"
-                      className={`block p-5 text-black rounded-xl ${
+                      className={`block p-5 text-black rounded-xl shadow-sm ${
                         isTemplate ? "bg-white" : "bg-white/20 backdrop-blur-lg"
                       }`}
                     >

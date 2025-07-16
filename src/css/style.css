@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-.filter{
+/* .filter{
     position: absolute;
     top: 0;
     width: 100vw;
@@ -15,7 +15,7 @@
     filter: url(#glass-distortion);
     border-radius: 10px;
     z-index: -1;
-}
+} */
 .nav ul li a{
     padding: 10px;
     border-radius: 10px;
