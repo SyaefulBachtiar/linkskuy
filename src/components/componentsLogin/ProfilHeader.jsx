@@ -373,7 +373,7 @@ export default function ProfilHeader() {
       try {
         setLoadingUser(true);
         // User Id
-        let userId = null;
+        let idUser = null;
 
         // debug
         // ✅ Hentikan kalau displayName belum tersedia (dari URL)
@@ -382,7 +382,7 @@ export default function ProfilHeader() {
         }
 
         // Jika user tidak ada maka isi dengan params yang ada di url
-        if (!currentUser) {
+        if (!currentUser && displayName) {
           const userRef = collection(db, "users");
           const queryUser = query(
             userRef,
@@ -399,17 +399,18 @@ export default function ProfilHeader() {
 
           // Ambil uuid berdasarkan params yang ada di url
           const data = userSnapshot.docs[0].data();
-          userId = data.uuid;
+          idUser = data.uuid;
 
           // Jika currentUser true
         } else {
           // isi User Id dengan currentUser Id
-          userId = currentUser.uid;
+          idUser = currentUser.uid;
         }
-
+       
+        
         // read user profil
         const userLoginRef = collection(db, "users");
-        const queryUserLogin = query(userLoginRef, where("uuid", "==", userId));
+        const queryUserLogin = query(userLoginRef, where("uuid", "==", idUser));
 
         const userLoginSnapshot = await getDocs(queryUserLogin);
         const userLoginData = userLoginSnapshot.docs.map((doc) => ({
@@ -421,7 +422,7 @@ export default function ProfilHeader() {
 
         // read user sosial media
         const sosmedRef = collection(db, "sosmed");
-        const querySosmed = query(sosmedRef, where("uuid", "==", userId));
+        const querySosmed = query(sosmedRef, where("uuid", "==", idUser));
         const sosmedSnapshot = await getDocs(querySosmed);
         const sosmedData = sosmedSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -490,7 +491,7 @@ export default function ProfilHeader() {
     <>
       <div className="flex justify-center flex-col gap-5 items-center mt-[100px]">
         <div className="w-[100px] h-[100px] rounded-[50%] relative">
-          {currentUser && !loadingUser && profil.length > 0 && (
+          {currentUser ? (
             <div className="absolute -top-[25px] -right-[15px] hover:scale-110 transition-transform ease-in-out transform">
               <button
                 onClick={() => {
@@ -525,10 +526,10 @@ export default function ProfilHeader() {
                 <p className="text-xs">edit</p>
               </button>
             </div>
-          )}
+          ) : ""}
           {loadingUser ? (
             <p>Loading...</p>
-          ) : userStatus ? (
+          ) : profil.length > 0 ? (
             <img
               src={
                 !profil[0]?.profilImg || profil.length === 0
