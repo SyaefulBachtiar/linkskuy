@@ -9,6 +9,7 @@ import LayananPageLayout from "./layouts/LayananPageLayout";
 import ProtectedRoute from "./components/form-components/ProtectedRoute";
 import Dashboard from "./layouts/LoginLayout/DashboardPageLayout";
 import Coba from "./layouts/Coba";
+import User from "./pages/halamanUser/User";
 
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/template" element={<TemplatePageLayout />} />
         <Route path="/layanan" element={<LayananPageLayout />} />
-        <Route path="/:displayName" element={<Dashboard />} />
+        <Route path="/:displayName" element={<User />} />
         <Route
           path="/coba"
           element={

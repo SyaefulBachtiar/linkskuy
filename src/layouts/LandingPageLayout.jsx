@@ -32,7 +32,10 @@ const navigate = useNavigate();
                 halaman keren.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
-                <button onClick={() => navigate("/dashboard")} className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-medium">
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="px-8 py-4 bg-gradient-to-r from-[#383c8a] via-[#686fcc] to-[#4A94AE] text-white rounded-lg hover:bg-blue-700 text-lg font-medium"
+                >
                   Buat Halaman Link Kamu
                 </button>
                 <button className="px-8 py-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-lg font-medium">
@@ -77,8 +80,10 @@ const navigate = useNavigate();
             {/* Description */}
             <section className="container mx-auto px-6 py-20 text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Bio Link Lokal{" "}
-                <span className="text-blue-600">Rasa Global</span>
+                Bio Link Untuk Semua{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#383c8a] via-[#686fcc] to-[#4A94AE]">
+                  Link kamu
+                </span>
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 LinkSkuy adalah platform bio link lokal yang memungkinkan kamu
@@ -92,7 +97,10 @@ const navigate = useNavigate();
             <section id="features" className="bg-gray-50 py-20">
               <div className="container mx-auto px-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16">
-                  Fitur <span className="text-blue-600">Unggulan</span>
+                  Fitur{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#383c8a] via-[#686fcc] to-[#4A94AE]">
+                    Unggulan
+                  </span>
                 </h2>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -138,7 +146,9 @@ const navigate = useNavigate();
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
                   LinkSkuy Cocok Untuk{" "}
-                  <span className="text-blue-600">Semua Kebutuhan</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#383c8a] via-[#686fcc] to-[#4A94AE]">
+                    Semua Kebutuhan
+                  </span>
                 </h2>
 
                 <div className="flex justify-center mb-10">
@@ -274,7 +284,10 @@ const navigate = useNavigate();
             <section id="examples" className="bg-gray-50 py-20">
               <div className="container mx-auto px-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-6">
-                  Contoh <span className="text-blue-600">Halaman LinkSkuy</span>
+                  Contoh{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#383c8a] via-[#686fcc] to-[#4A94AE]">
+                    Halaman LinkSkuy
+                  </span>
                 </h2>
                 <p className="text-xl text-gray-600 text-center max-w-2xl mx-auto mb-12">
                   Lihat bagaimana kreator dan bisnis menggunakan LinkSkuy untuk

@@ -58,8 +58,8 @@ export default function Navbar(){
                   <li>
                     <Link
                       to="/dashboard"
-                      className={`text-black ${
-                        isDashboardActive ? "bg-gray-500" : ""
+                      className={`${
+                        isDashboardActive ? "bg-white" : ""
                       }`}
                     >
                       Dashboard
@@ -68,8 +68,8 @@ export default function Navbar(){
                   <li>
                     <Link
                       to="/template"
-                      className={`text-black  ${
-                        isTemplatePageActive ? "bg-gray-500" : ""
+                      className={` ${
+                        isTemplatePageActive ? "bg-white" : ""
                       }`}
                     >
                       Template
@@ -89,7 +89,7 @@ export default function Navbar(){
                   <li>
                     <Link
                       to="/layanan"
-                      className={`${isLayananPageActive ? "bg-gray-500" : ""}`}
+                      className={`${isLayananPageActive ? "bg-white" : ""}`}
                     >
                       Layanan
                     </Link>
@@ -97,7 +97,7 @@ export default function Navbar(){
                   <li>
                     <Link
                       to="/template"
-                      className={`${isTemplatePageActive ? "bg-gray-500" : ""}`}
+                      className={`${isTemplatePageActive ? "bg-white" : ""}`}
                     >
                       Template
                     </Link>

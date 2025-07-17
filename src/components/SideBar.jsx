@@ -6,14 +6,14 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
     return (
       <div className="block sm:block md:hidden lg:hidden xl:hidden h-screen bg-gray-700">
         <div
-          className={`absolute top-[70px] right-0 flex justify-end transition-transform duration-300 ease-in-out transform ${
+          className={`absolute top-[67px] right-0 flex justify-end transition-transform duration-300 ease-in-out transform ${
             menuActive ? "translate-x-0" : "translate-x-full"
           }`}
         >
           <div
-            className={`side-bar relative transition-transform duration-300 ease-in-out transform overflow-hidden shadow-lg`}
+            className={` relative transition-transform duration-300 ease-in-out transform overflow-hidden shadow-lg`}
           >
-            <div className="w-[300px] bg-white h-screen sidebar-background"></div>
+            <div className="w-[300px] bg-white h-screen"></div>
             <ul className="font-montserrat flex flex-col justify-items-end gap-8 h-screen w-[300px] text-white absolute top-0 -left-0 p-10">
               {currentUser ? (
                 <>
@@ -21,9 +21,7 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
                     <Link
                       to="/dashboard"
                       className={`block p-5 text-black rounded-xl shadow-sm ${
-                        isDashboard
-                          ? "bg-white"
-                          : "bg-white/20 backdrop-blur-lg"
+                        isDashboard ? "bg-cyan-200" : "bg-white"
                       }`}
                     >
                       Dashboard
@@ -33,13 +31,15 @@ export default function SideBar({isLayanan, isTemplate, isDashboard, currentUser
                     <Link
                       to="/template"
                       className={`block p-5 text-black rounded-xl shadow-sm ${
-                        isTemplate ? "bg-white" : "bg-white/20 backdrop-blur-lg"
+                        isTemplate
+                          ? "bg-cyan-200"
+                          : "bg-white"
                       }`}
                     >
                       Template
                     </Link>
                   </li>
-                  <li className="font-bold bg-white/20 backdrop-blur-lg p-5 rounded-xl">
+                  <li className="font-bold bg-white p-5 rounded-xl">
                     <button
                       onClick={handleLogout}
                       className="font-bold text-red-500 rounded-xl"

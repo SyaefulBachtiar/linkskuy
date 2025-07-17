@@ -4,9 +4,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
   Link,
   Link2,
-  LucideFacebook,
-  LucideInstagram,
-  LucideTwitter,
   PenSquare,
   User,
 } from "lucide-react";
@@ -46,7 +43,6 @@ const MY_SUPABASE_BUCKET_NAME = "linkkk";
 export default function ProfilHeader() {
   const [currentUser, setCurrentUser] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [userStatus, setUserStatus] = useState(true);
   const [loadingUser, setLoadingUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profil, setProfile] = useState([]);
@@ -71,7 +67,7 @@ export default function ProfilHeader() {
     ],
   });
 
-  const { displayName } = useParams();
+
   const linkText = `https://linkskuy.vercel.app/${currentUser?.displayName}`;
   const modal = useRef(null);
   const opsi = useRef(null);
@@ -372,45 +368,10 @@ export default function ProfilHeader() {
     const fetch = async () => {
       try {
         setLoadingUser(true);
-        // User Id
-        let idUser = null;
-
-        // debug
-        // ✅ Hentikan kalau displayName belum tersedia (dari URL)
-        if (!currentUser && !displayName) {
-          return;
-        }
-
-        // Jika user tidak ada maka isi dengan params yang ada di url
-        if (!currentUser && displayName) {
-          const userRef = collection(db, "users");
-          const queryUser = query(
-            userRef,
-            where("displayName", "==", displayName)
-          );
-
-          const userSnapshot = await getDocs(queryUser);
-
-          // Jika Nama tidak sesuai
-          if (userSnapshot.empty) {
-            console.log("Data tidak sesuai");
-            return;
-          }
-
-          // Ambil uuid berdasarkan params yang ada di url
-          const data = userSnapshot.docs[0].data();
-          idUser = data.uuid;
-
-          // Jika currentUser true
-        } else {
-          // isi User Id dengan currentUser Id
-          idUser = currentUser.uid;
-        }
-       
         
         // read user profil
         const userLoginRef = collection(db, "users");
-        const queryUserLogin = query(userLoginRef, where("uuid", "==", idUser));
+        const queryUserLogin = query(userLoginRef, where("uuid", "==", currentUser.uid));
 
         const userLoginSnapshot = await getDocs(queryUserLogin);
         const userLoginData = userLoginSnapshot.docs.map((doc) => ({
@@ -422,7 +383,7 @@ export default function ProfilHeader() {
 
         // read user sosial media
         const sosmedRef = collection(db, "sosmed");
-        const querySosmed = query(sosmedRef, where("uuid", "==", idUser));
+        const querySosmed = query(sosmedRef, where("uuid", "==", currentUser.uid));
         const sosmedSnapshot = await getDocs(querySosmed);
         const sosmedData = sosmedSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -439,7 +400,7 @@ export default function ProfilHeader() {
     if (!loadingUser) {
       fetch();
     }
-  }, [currentUser, displayName]);
+  }, [currentUser]);
 
   // Handle change
   const handleChange = (e) => {
@@ -491,7 +452,7 @@ export default function ProfilHeader() {
     <>
       <div className="flex justify-center flex-col gap-5 items-center mt-[100px]">
         <div className="w-[100px] h-[100px] rounded-[50%] relative">
-          {currentUser ? (
+          
             <div className="absolute -top-[25px] -right-[15px] hover:scale-110 transition-transform ease-in-out transform">
               <button
                 onClick={() => {
@@ -526,7 +487,6 @@ export default function ProfilHeader() {
                 <p className="text-xs">edit</p>
               </button>
             </div>
-          ) : ""}
           {loadingUser ? (
             <p>Loading...</p>
           ) : profil.length > 0 ? (
@@ -545,10 +505,10 @@ export default function ProfilHeader() {
         </div>
         <div className="font-montserrat text-center">
           <h1 className="text-2xl">
-            {currentUser?.displayName || displayName}
+            {currentUser?.displayName}
           </h1>
           <div className="flex justify-center">
-            {currentUser ? (
+            
               <p
                 className="flex gap-4 mt-10 text-sm w-[80%] text-center text-gray-500 cursor-pointer"
                 onClick={handleCopy}
@@ -559,9 +519,7 @@ export default function ProfilHeader() {
                   <span className="text-green-500 ml-2">Disalin!</span>
                 )}
               </p>
-            ) : (
-              ""
-            )}
+            
           </div>
           {/* Optional: tampilkan email */}
           {/* <p className="text-gray-600">{currentUser?.email}</p> */}

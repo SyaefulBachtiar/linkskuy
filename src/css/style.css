@@ -16,10 +16,14 @@
     border-radius: 10px;
     z-index: -1;
 } */
+ body{
+    overflow-x: hidden;
+ }
 .nav ul li a{
     padding: 10px;
     border-radius: 10px;
     cursor: pointer;
+    color: blue;
 }
 .nav ul li a:hover{
     background-color: rgb(228, 228, 228);
