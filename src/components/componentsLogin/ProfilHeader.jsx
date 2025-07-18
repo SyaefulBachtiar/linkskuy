@@ -546,7 +546,7 @@ export default function ProfilHeader() {
 
       {/* Modal edit profile */}
       {editProfile && (
-        <div className="bg-black/20 fixed top-0 w-screen min-h-screen flex justify-center items-center z-50">
+        <div className="bg-black/20 fixed left-0 top-0 w-screen min-h-screen flex justify-center items-center z-50">
           <div
             ref={modal}
             className="bg-white p-5 rounded-md w-[400px] max-h-[90vh] overflow-y-auto"

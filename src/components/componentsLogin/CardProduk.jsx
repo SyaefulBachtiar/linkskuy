@@ -312,9 +312,8 @@ export default function CardProduk({ ratting }) {
 
   return (
     <>
-      {/* Card produk */}      
-        <Produks produk={products}/>
-
+      {/* Card produk */}
+      <Produks produk={products} />
 
       {currentUser ? (
         <div className="flex justify-center items-center py-10">
@@ -326,12 +325,13 @@ export default function CardProduk({ ratting }) {
         ""
       )}
 
+      {/* Modal */}
       {modal && (
         <div className="bg-black/20 fixed left-0 w-full top-0 min-w-screen min-h-screen flex justify-center items-center z-50">
           <form
             onSubmit={handleSubmit}
             ref={modalRef}
-            className="bg-white p-5 rounded-md  max-h-[90vh] overflow-y-auto"
+            className="bg-white p-5 rounded-md w-[400px] max-h-[90vh] overflow-y-auto"
           >
             <Input
               icon={<User2 />}
