@@ -455,11 +455,11 @@ export default function LinkList() {
                           link: item.link,
                           image: item.image,
                           customImage: item.customImage || null,
-                          customImagePath: item.customImagePath || null
+                          customImagePath: item.customImagePath || null,
                         });
                         setTambahLink(true);
                         setEditMode(true);
-                        setEditId(item.id);
+                        f(item.id);
                         setTouched({ nama: true, link: true });
                       }}
                     >
@@ -477,7 +477,9 @@ export default function LinkList() {
                 )}
               </div>
             ))
-          ) : ""}
+          ) : (
+            ""
+          )}
         </div>
 
         {/* Button tambah link */}
@@ -642,7 +644,7 @@ export default function LinkList() {
                     // customImage: null,
                   }
                 >
-                  Tambah
+                  {editMode ? "Edit" : "Tambah"}
                 </Button>
 
                 <Button
@@ -652,6 +654,7 @@ export default function LinkList() {
                     setForm({ link: "", nama: "", image: "default" });
                     setErrors({});
                     setTouched({});
+                    setEditMode(false);
                   }}
                   className="px-4 border py-2 text-red-500 rounded hover:bg-red-50 transition-colors"
                 >

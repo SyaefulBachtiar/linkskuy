@@ -1,3 +1,5 @@
+import Loading from "../../../components/form-components/Loading";
+
 export default function Link ({link, loading}) {
     // Preset images
   const imageOptions = [
@@ -33,10 +35,7 @@ export default function Link ({link, loading}) {
       <>
         <div className="h-[300px] px-5 flex justify-center items-center flex-col gap-4">
           {loading ? (
-            <div className="animate-pulse w-screen px-10 flex justify-center items-center flex-col gap-4">
-              <div className="p-10 w-full rounded-md bg-gray-200"></div>
-              <div className="p-10 w-full rounded-md bg-gray-200"></div>
-            </div>
+            <Loading />
           ) : (
             link.map((item) => (
               <a

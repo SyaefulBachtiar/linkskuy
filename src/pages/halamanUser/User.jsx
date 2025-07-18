@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { db } from "../../firebase/config";
 import ProfilUser from "./kompenentUser/UserProfil";
 import Link from "./kompenentUser/Link";
-import Produks from "./kompenentUser/Produks";
+import ProduksUser from "./kompenentUser/ProduksUser";
 import { useParams } from "react-router-dom";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import UndifinedUsers from "./kompenentUser/UndifinedUser";
@@ -116,9 +116,11 @@ export default function User(){
     if(userNotFound) return <UndifinedUsers /> ;
     return (
       <>
-        <ProfilUser dataProfil={profil} loading={loading} sosmed={sosmed} />
-        <Link link={links} loading={loading} />
-        <Produks produk={produks} />
+        <div className="min-h-screen">
+          <ProfilUser dataProfil={profil} loading={loading} sosmed={sosmed} />
+          <Link link={links} loading={loading} />
+        </div>
+        <ProduksUser produks={produks} />
       </>
     );
 }

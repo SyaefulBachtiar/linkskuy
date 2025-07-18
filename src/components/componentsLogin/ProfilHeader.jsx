@@ -507,10 +507,10 @@ export default function ProfilHeader() {
           <h1 className="text-2xl">
             {currentUser?.displayName}
           </h1>
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center mt-2">
             
               <p
-                className="flex gap-4 mt-10 text-sm w-[80%] text-center text-gray-500 cursor-pointer"
+                className="flex gap-2 text-sm w-full text-center text-gray-500 cursor-pointer"
                 onClick={handleCopy}
                 title="Salin"
               >
